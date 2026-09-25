@@ -1,0 +1,118 @@
+{
+  "registry_version": "1.0.0",
+  "model_version": "nutrisense-scenario-a-v1.0.0",
+  "feature_schema_version": "scenario-a-30-v1",
+  "scenario": "A",
+  "prediction_setting": "Community Pre-Screening",
+  "model_family": "LightGBM",
+  "training_configuration": "unweighted",
+  "feature_count": 30,
+  "is_active": true,
+  "created_at": "2026-09-25",
+  "description": "NutriSense AI Scenario A 30-predictor model excluding four socially sensitive attributes (household_head_female, caste_category, religion_category, mother_education_level).",
+  "removed_sensitive_features": [
+    "household_head_female",
+    "caste_category",
+    "religion_category",
+    "mother_education_level"
+  ],
+  "features": [
+    "child_age_months",
+    "child_age_group",
+    "child_sex_male",
+    "birth_order",
+    "is_multiple_birth",
+    "is_firstborn",
+    "preceding_birth_interval_months",
+    "birth_size_ordinal",
+    "birth_weight_kg",
+    "birth_weight_missing",
+    "delivery_place_type",
+    "still_breastfeeding",
+    "diarrhea_recent",
+    "fever_recent",
+    "cough_recent",
+    "mother_age_years",
+    "mother_age_first_birth",
+    "mother_bmi",
+    "mother_bmi_missing",
+    "total_children_born",
+    "anc_visits_count",
+    "anc_visits_missing",
+    "wealth_quintile",
+    "is_rural",
+    "drinking_water_type",
+    "sanitation_facility_type",
+    "has_electricity",
+    "clean_cooking_fuel",
+    "household_size",
+    "state_id"
+  ],
+  "thresholds": {
+    "stunting": 0.36,
+    "underweight": 0.30,
+    "wasting": 0.17
+  },
+  "models": {
+    "stunting": {
+      "target": "stunting",
+      "artifact": "models/v1/model_comparison_lightgbm_stunting_unweighted_v1.joblib",
+      "sha256": "09aa09beb3d79d9b336afe585714ec05c7ae6618e1a0db197858129f9dc95191",
+      "file_size_bytes": 369007,
+      "model_family": "LightGBM",
+      "model_type": "LGBMClassifier",
+      "training_condition": "unweighted",
+      "threshold": 0.36,
+      "decision_rule": "probability >= threshold",
+      "feature_count": 30,
+      "test_metrics": {
+        "roc_auc": 0.6640,
+        "pr_auc": 0.5134,
+        "sensitivity": 0.6089,
+        "specificity": 0.6324,
+        "f1_score": 0.5357,
+        "balanced_accuracy": 0.6206
+      }
+    },
+    "underweight": {
+      "target": "underweight",
+      "artifact": "models/v1/model_comparison_lightgbm_underweight_unweighted_v1.joblib",
+      "sha256": "282e4fb0f2b294fb3bd2e1ea2f0f9c3d8a0b87f386475afc31c9800d78506159",
+      "file_size_bytes": 369119,
+      "model_family": "LightGBM",
+      "model_type": "LGBMClassifier",
+      "training_condition": "unweighted",
+      "threshold": 0.30,
+      "decision_rule": "probability >= threshold",
+      "feature_count": 30,
+      "test_metrics": {
+        "roc_auc": 0.6808,
+        "pr_auc": 0.4827,
+        "sensitivity": 0.6753,
+        "specificity": 0.5845,
+        "f1_score": 0.5183,
+        "balanced_accuracy": 0.6299
+      }
+    },
+    "wasting": {
+      "target": "wasting",
+      "artifact": "models/v1/model_comparison_lightgbm_wasting_unweighted_v1.joblib",
+      "sha256": "a68b5dc29cb98f2806458acefaf934aa44e57f9e8e81038dcd2fce5900287bb2",
+      "file_size_bytes": 359215,
+      "model_family": "LightGBM",
+      "model_type": "LGBMClassifier",
+      "training_condition": "unweighted",
+      "threshold": 0.17,
+      "decision_rule": "probability >= threshold",
+      "feature_count": 30,
+      "test_metrics": {
+        "roc_auc": 0.6328,
+        "pr_auc": 0.2737,
+        "sensitivity": 0.6883,
+        "specificity": 0.4995,
+        "f1_score": 0.3558,
+        "balanced_accuracy": 0.5939
+      }
+    }
+  }
+}

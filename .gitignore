@@ -1,0 +1,111 @@
+# ==============================================================================
+# NutriSense AI - Git Ignore Configuration
+# ==============================================================================
+
+# --- DHS / NFHS CONFIDENTIAL MICRODATA (CRITICAL PRIVACY RULE) ---
+# Raw microdata, extracted DHS folders, and all proprietary survey formats
+IAKR7EDT/
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+*.dta
+*.DTA
+*.sav
+*.SAV
+*.dat
+*.DAT
+*.sas7bdat
+*.csv
+!data_dictionary.csv
+*.csv.gz
+*.parquet
+*.feather
+
+# --- ARCHIVED HISTORICAL & RESEARCH CANDIDATE ASSETS ---
+archive/
+models/v1/research_candidates/
+
+# --- SERIALIZED MODELS & ARTIFACTS ---
+# Only production 30-feature v1 champion LightGBM models and registries are tracked
+models/*
+!models/.gitkeep
+!models/model_registry.json
+!models/v1/
+!models/v1/model_registry.json
+!models/v1/model_comparison_lightgbm_*_v1.joblib
+*.joblib
+!models/v1/model_comparison_lightgbm_*_v1.joblib
+*.pkl
+*.pickle
+*.onnx
+*.h5
+
+# --- LOGS, CACHE & TEMPORARY FILES ---
+*.log
+logs/
+.cache/
+scratch/
+
+# --- PYTHON COMPILED & RUNTIME ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- FRONTEND BUILD & DEPENDENCIES ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# --- VIRTUAL ENVIRONMENTS ---
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- JUPYTER NOTEBOOKS CHECKPOINTS ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# --- TESTING & COVERAGE ---
+.pytest_cache/
+catboost_info/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- ENVIRONMENT VARIABLES & SECRETS ---
+.env
+.env.*
+!.env.example
+
+# --- IDE SPECIFIC ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
