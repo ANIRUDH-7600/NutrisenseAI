@@ -113,11 +113,32 @@ NutriSense AI is fully documented with a comprehensive academic paper, system ar
 
 ---
 
+## Running the Application Locally
+
+### 1. Start the FastAPI Backend Server
+```bash
+cd backend
+uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+* **API URL**: `http://127.0.0.1:8000`
+* **Swagger Documentation**: `http://127.0.0.1:8000/docs`
+* **Health Check**: `http://127.0.0.1:8000/health`
+
+### 2. Start the React Frontend Web Application
+```bash
+cd frontend
+npm run dev
+```
+* **Web UI**: `http://localhost:5173`
+
+---
+
 ## Running Automated Tests
 ```bash
-# Frontend automated test suite (9 Node tests)
-npm test --prefix frontend
-
-# Full backend pytest regression test suite (280 unit/integration tests)
+# Backend pytest regression test suite (280 unit & integration tests)
+cd backend
 python -m pytest
+
+# Frontend automated test suite (9 Node specification tests)
+npm test --prefix frontend
 ```
