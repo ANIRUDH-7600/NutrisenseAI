@@ -19,12 +19,14 @@ def test_directory_structure():
         "tests",
     ]
     for d in required_dirs:
-        assert os.path.exists(d), f"Directory {d} does not exist"
+        exists = os.path.exists(d) or os.path.exists(f"../{d}") or os.path.exists(f"backend/{d}")
+        assert exists, f"Directory {d} does not exist"
 
 def test_gitignore_protects_confidential_data():
     """Verify that .gitignore exists and contains critical rules for DHS/NFHS privacy."""
-    assert os.path.exists(".gitignore"), ".gitignore does not exist"
-    with open(".gitignore", "r") as f:
+    gitignore_path = ".gitignore" if os.path.exists(".gitignore") else "../.gitignore"
+    assert os.path.exists(gitignore_path), ".gitignore does not exist"
+    with open(gitignore_path, "r") as f:
         content = f.read()
     
     # Check for crucial DHS protection patterns

@@ -22,6 +22,20 @@ from typing import Dict, Any, List, Optional
 DEFAULT_REGISTRY_PATH = "models/model_registry.json"
 DEFAULT_REGISTRY_V1_PATH = "models/v1/model_registry.json"
 
+
+def _resolve_path(path: str) -> str:
+    """Resolves relative paths whether running from backend/ or project root."""
+    if not path:
+        return path
+    if os.path.exists(path):
+        return path
+    backend_path = os.path.join("backend", path)
+    if os.path.exists(backend_path):
+        return backend_path
+    if path.startswith("backend/") and os.path.exists(path[8:]):
+        return path[8:]
+    return path
+
 EXPECTED_MODEL_VERSION = "nutrisense-scenario-a-v1.0.0"
 EXPECTED_FEATURE_SCHEMA_VERSION = "scenario-a-30-v1"
 EXPECTED_SCENARIO = "A"
@@ -181,17 +195,19 @@ def load_registry(
     Loads and rigorously validates the model registry specification.
     Fails loudly if any required metadata, version, threshold, or feature is altered.
     """
-    if not os.path.exists(registry_path):
-        if os.path.exists(DEFAULT_REGISTRY_V1_PATH):
-            registry_path = DEFAULT_REGISTRY_V1_PATH
+    resolved_path = _resolve_path(registry_path)
+    if not os.path.exists(resolved_path):
+        resolved_v1 = _resolve_path(DEFAULT_REGISTRY_V1_PATH)
+        if os.path.exists(resolved_v1):
+            resolved_path = resolved_v1
         else:
             raise FileNotFoundError(f"Model registry file not found: {registry_path}")
 
     try:
-        with open(registry_path, "r", encoding="utf-8") as f:
+        with open(resolved_path, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Model registry file {registry_path} is not valid JSON: {str(e)}")
+        raise ValueError(f"Model registry file {resolved_path} is not valid JSON: {str(e)}")
 
     if "versions" in raw_data and EXPECTED_MODEL_VERSION in raw_data["versions"]:
         active_dict = copy.deepcopy(raw_data["versions"][EXPECTED_MODEL_VERSION])
@@ -219,7 +235,7 @@ def verify_model_integrity(target: str, registry: Optional[Dict[str, Any]] = Non
         raise ValueError(f"Target '{target}' is not registered.")
 
     model_info = registry["models"][target]
-    artifact_path = model_info.get("artifact")
+    artifact_path = _resolve_path(model_info.get("artifact", ""))
     expected_sha = model_info.get("sha256")
 
     if not artifact_path or not os.path.exists(artifact_path):
@@ -265,7 +281,7 @@ def load_registered_pipeline(target: str, registry: Optional[Dict[str, Any]] = N
         registry = load_registry()
 
     verify_model_integrity(target, registry=registry)
-    artifact_path = registry["models"][target]["artifact"]
+    artifact_path = _resolve_path(registry["models"][target]["artifact"])
 
     pipeline = joblib.load(artifact_path)
     if not hasattr(pipeline, "named_steps"):
