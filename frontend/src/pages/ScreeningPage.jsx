@@ -255,14 +255,14 @@ export default function ScreeningPage({ onScreeningSuccess }) {
       <DisclaimerBanner />
 
       {/* Header & Demo Action */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="page-header-row">
         <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Scenario A: Community Child Screening</h1>
+          <h1 style={{ marginBottom: '0.25rem' }}>Scenario A: Community Child Screening</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem' }}>
             Enter non-invasive child, maternal, and household attributes for rapid undernutrition triage.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="action-btn-group">
           <button
             type="button"
             onClick={handleFillSample}
@@ -899,7 +899,7 @@ export default function ScreeningPage({ onScreeningSuccess }) {
         </div>
 
         {/* Submit Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+        <div className="form-submit-row">
           <button
             type="button"
             onClick={handleReset}

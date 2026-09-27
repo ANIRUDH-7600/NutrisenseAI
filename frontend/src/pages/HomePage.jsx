@@ -1,16 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, ShieldAlert, Cpu, HeartPulse, CheckCircle2, Search, BarChart3 } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldAlert, HeartPulse, BarChart3 } from 'lucide-react';
 import DisclaimerBanner from '../components/DisclaimerBanner';
 
 export default function HomePage() {
   return (
-    <div className="container" style={{ paddingTop: '2.5rem' }}>
+    <div className="container" style={{ paddingTop: '2rem' }}>
       {/* Top Disclaimer Banner */}
       <DisclaimerBanner />
 
       {/* Hero Section */}
-      <section style={{ textAlign: 'center', maxWidth: '850px', margin: '2rem auto 3.5rem' }}>
+      <section style={{ textAlign: 'center', maxWidth: '850px', margin: '1.5rem auto 3rem' }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -21,17 +21,18 @@ export default function HomePage() {
           borderRadius: 'var(--radius-full)',
           fontSize: '0.85rem',
           fontWeight: 700,
-          marginBottom: '1.25rem'
+          marginBottom: '1.25rem',
+          maxWidth: '100%'
         }}>
-          <Sparkles size={16} />
+          <Sparkles size={16} style={{ flexShrink: 0 }} />
           <span>Scenario A — Scale-Free Community Pre-Screening</span>
         </div>
 
-        <h1 style={{ fontSize: '2.75rem', marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>
+        <h1 className="hero-title" style={{ marginBottom: '1.25rem' }}>
           Childhood Malnutrition Risk Intelligence & Early Triage
         </h1>
 
-        <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '2rem' }}>
+        <p className="hero-lead" style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
           NutriSense AI evaluates early childhood undernutrition risk without requiring weighing scales
           or stadiometers. Using non-invasive demographic, maternal, household, and recent morbidity
           markers, our calibrated machine learning models provide rapid risk intelligence for community health workers.
@@ -51,7 +52,7 @@ export default function HomePage() {
       {/* Tri-Target Condition Cards */}
       <section style={{ marginBottom: '4rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.85rem', marginBottom: '0.5rem' }}>Tri-Target Undernutrition Assessment</h2>
+          <h2 style={{ marginBottom: '0.5rem' }}>Tri-Target Undernutrition Assessment</h2>
           <p style={{ color: 'var(--text-muted)' }}>
             Evaluates statistical risk across all three internationally recognized pediatric undernutrition conditions.
           </p>
@@ -149,15 +150,15 @@ export default function HomePage() {
 
       {/* How it Works / Workflow */}
       <section style={{ marginBottom: '4rem' }}>
-        <div className="card" style={{ padding: '2.5rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>How Community Pre-Screening Operates</h2>
+        <div className="card" style={{ padding: 'clamp(1.25rem, 3vw, 2.5rem)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ marginBottom: '0.5rem' }}>How Community Pre-Screening Operates</h2>
             <p style={{ color: 'var(--text-muted)' }}>
               Non-invasive, scale-free workflow designed for frontline health workers in low-resource settings.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1.5rem' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                 <span style={{

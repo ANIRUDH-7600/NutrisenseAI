@@ -19,7 +19,7 @@ export default function AboutPage() {
       <DisclaimerBanner />
 
       {/* Page Header */}
-      <div style={{ marginBottom: '2.5rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -30,12 +30,13 @@ export default function AboutPage() {
           borderRadius: 'var(--radius-full)',
           fontSize: '0.825rem',
           fontWeight: 700,
-          marginBottom: '0.75rem'
+          marginBottom: '0.75rem',
+          maxWidth: '100%'
         }}>
-          <BookOpen size={15} />
+          <BookOpen size={15} style={{ flexShrink: 0 }} />
           <span>Research Methodology & System Architecture</span>
         </div>
-        <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem' }}>Methodology & Scientific Foundations</h1>
+        <h1 style={{ marginBottom: '0.5rem' }}>Methodology & Scientific Foundations</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6' }}>
           NutriSense AI is an academic machine learning research system developed to investigate the feasibility
           of non-invasive community pre-screening for under-five undernutrition in resource-constrained environments.
@@ -48,7 +49,7 @@ export default function AboutPage() {
           <Database size={22} color="var(--color-primary)" />
           <h2 style={{ fontSize: '1.35rem' }}>Dataset & Target Population</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>
           <div>
             <h3 style={{ fontSize: '1rem', color: 'var(--color-primary)', marginBottom: '0.35rem' }}>
               Data Source
@@ -117,7 +118,7 @@ export default function AboutPage() {
           <h2 style={{ fontSize: '1.35rem' }}>Model Architecture & Explainability</h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.5rem', marginBottom: '1.25rem' }}>
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Algorithm</h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>

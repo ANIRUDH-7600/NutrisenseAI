@@ -52,7 +52,7 @@ export default function SystemPage() {
       <DisclaimerBanner />
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="page-header-row" style={{ marginBottom: '2rem' }}>
         <div>
           <div style={{
             display: 'inline-flex',
@@ -64,12 +64,13 @@ export default function SystemPage() {
             borderRadius: 'var(--radius-full)',
             fontSize: '0.825rem',
             fontWeight: 700,
-            marginBottom: '0.5rem'
+            marginBottom: '0.5rem',
+            maxWidth: '100%'
           }}>
-            <Cpu size={15} />
+            <Cpu size={15} style={{ flexShrink: 0 }} />
             <span>Diagnostics & Model Provenance</span>
           </div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>System & Model Health</h1>
+          <h1 style={{ marginBottom: '0.25rem' }}>System & Model Health</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem' }}>
             Live cryptographic verification and operational readiness status of the NutriSense AI inference backend.
           </p>
@@ -108,7 +109,7 @@ export default function SystemPage() {
       )}
 
       {/* Health Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
         {/* Service Liveness */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -177,7 +178,7 @@ export default function SystemPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem' }}>
             <div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Model Release Version</span>
               <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)', marginTop: '0.15rem' }}>

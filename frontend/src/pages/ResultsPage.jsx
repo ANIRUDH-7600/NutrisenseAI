@@ -159,10 +159,10 @@ export default function ResultsPage({ screeningResult }) {
       <DisclaimerBanner />
 
       {/* Results Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="page-header-row">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <h1 style={{ fontSize: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+            <h1>
               {childName && childName !== 'Anonymous Child' ? `Screening for ${childName}` : 'Screening Risk Dashboard'}
             </h1>
             <span style={{
@@ -184,7 +184,7 @@ export default function ResultsPage({ screeningResult }) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="action-btn-group">
           <button onClick={handlePrint} className="btn btn-secondary btn-sm" title="Print results dashboard">
             <Printer size={15} />
             Print Summary
@@ -197,16 +197,13 @@ export default function ResultsPage({ screeningResult }) {
       </div>
 
       {/* Summary Status Banner */}
-      <div style={{
-        padding: '1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        backgroundColor: positiveCount > 0 ? 'var(--color-danger-light)' : 'var(--color-success-light)',
-        border: `1px solid ${positiveCount > 0 ? 'var(--color-danger-border)' : 'var(--color-success-border)'}`,
-        marginBottom: '2rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem'
-      }}>
+      <div
+        className="results-summary-banner"
+        style={{
+          backgroundColor: positiveCount > 0 ? 'var(--color-danger-light)' : 'var(--color-success-light)',
+          border: `1px solid ${positiveCount > 0 ? 'var(--color-danger-border)' : 'var(--color-success-border)'}`
+        }}
+      >
         <div style={{
           width: '3rem',
           height: '3rem',
@@ -261,7 +258,7 @@ export default function ResultsPage({ screeningResult }) {
       </div>
 
       {/* Navigation Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+      <div className="results-footer-nav">
         <Link to="/screen" className="btn btn-secondary">
           <ArrowLeft size={16} />
           Screen Another Child
