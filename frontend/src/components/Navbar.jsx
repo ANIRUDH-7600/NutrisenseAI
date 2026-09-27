@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { ShieldAlert, BookOpen, Menu, X, Sparkles } from 'lucide-react';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,21 +11,13 @@ export default function Navbar() {
   return (
     <nav className="navbar" aria-label="Main Navigation">
       <div className="container navbar-inner">
+        {/* Left: Brand */}
         <Link to="/" className="navbar-brand" onClick={closeMenu}>
-          <img src="/logo.png" alt="NutriSense AI Logo" className="navbar-logo-img" />
+          <img src="/logo.png" alt="NutriSense AI" className="navbar-logo-img" />
           <span className="brand-title">NutriSense AI</span>
-          <span className="brand-badge">Scenario A</span>
         </Link>
 
-        <button
-          className="mobile-menu-btn"
-          onClick={toggleMenu}
-          aria-expanded={isOpen}
-          aria-label="Toggle navigation menu"
-        >
-          {isOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-
+        {/* Center: Clean Minimal Links with SmartDocQ Underline */}
         <ul className={`nav-links ${isOpen ? 'open' : ''}`}>
           <li>
             <NavLink
@@ -43,7 +35,6 @@ export default function Navbar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
-              <Sparkles size={16} />
               Screen Child
             </NavLink>
           </li>
@@ -53,7 +44,6 @@ export default function Navbar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
-              <ShieldAlert size={16} />
               Results
             </NavLink>
           </li>
@@ -63,12 +53,35 @@ export default function Navbar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               onClick={closeMenu}
             >
-              <BookOpen size={16} />
               Methodology
             </NavLink>
           </li>
         </ul>
+
+        {/* Right: Sleek Scenario-A Pill Badge + User / AI Avatar */}
+        <div className="navbar-right-action">
+          <Link to="/screen" className="navbar-cta-pill" onClick={closeMenu}>
+            <span>Scenario A</span>
+            <ArrowUpRight size={13} />
+          </Link>
+
+          {/* SmartDocQ style circular avatar/badge */}
+          <div className="navbar-avatar-circle" title="System Ready">
+            <span className="avatar-initials">AI</span>
+            <span className="avatar-status-dot" />
+          </div>
+
+          <button
+            className="mobile-menu-btn"
+            onClick={toggleMenu}
+            aria-expanded={isOpen}
+            aria-label="Toggle navigation menu"
+          >
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
     </nav>
   );
 }
+
