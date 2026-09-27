@@ -34,6 +34,9 @@ class ChildScreeningRequest(BaseModel):
     """
     model_config = ConfigDict(extra="forbid")
 
+    # Metadata / Identification (Non-ML feature)
+    child_name: Optional[str] = Field("Anonymous Child", max_length=100, description="Optional child's name or alias for record keeping.")
+
     # 1. Child Demographics
     child_age_months: float = Field(..., ge=0, le=59, description="Child's exact age in completed months (0 to 59).")
     child_age_group: Optional[str] = Field(None, description="Optional clinical age bracket (e.g. '12_23_mo'). Derived if omitted.")
@@ -186,8 +189,9 @@ class TargetScreeningPrediction(BaseModel):
 class ScreeningResponse(BaseModel):
     """Structured response for child screening prediction."""
     success: bool = True
-    model_version: str = "nutrisense-scenario-a-v2.0.0"
-    feature_schema_version: str = "scenario-a-30-v2"
+    child_name: Optional[str] = "Anonymous Child"
+    model_version: str = "nutrisense-scenario-a-v1.0.0"
+    feature_schema_version: str = "scenario-a-30-v1"
     predictions: Dict[str, TargetScreeningPrediction]
 
 
@@ -199,6 +203,7 @@ class HealthResponse(BaseModel):
 class ScreeningRecord(BaseModel):
     """Stored screening assessment record in MongoDB."""
     screening_id: str
+    child_name: Optional[str] = "Anonymous Child"
     created_at: str
     inputs: Dict[str, Any]
     predictions: Dict[str, Any]

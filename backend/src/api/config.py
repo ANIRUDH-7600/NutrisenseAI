@@ -4,7 +4,21 @@ Environment variables control execution mode, CORS, and model paths.
 """
 
 import os
+from pathlib import Path
 from typing import List
+from dotenv import load_dotenv
+
+# Load .env file from backend/ or project root if present
+_current_dir = Path(__file__).resolve().parent
+_backend_env = _current_dir.parent.parent / ".env"
+_root_env = _current_dir.parent.parent.parent / ".env"
+
+if _backend_env.exists():
+    load_dotenv(dotenv_path=_backend_env)
+elif _root_env.exists():
+    load_dotenv(dotenv_path=_root_env)
+else:
+    load_dotenv()
 
 # Environment: 'development' or 'production'
 NUTRISENSE_ENV: str = os.getenv("NUTRISENSE_ENV", "development").lower()

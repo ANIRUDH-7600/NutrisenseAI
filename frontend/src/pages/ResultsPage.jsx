@@ -51,6 +51,7 @@ export default function ResultsPage({ screeningResult }) {
   }
 
   const { predictions, model_version, feature_schema_version } = resultData;
+  const childName = resultData.child_name || inputPayload?.child_name || 'Anonymous Child';
 
   const handlePrint = () => {
     window.print();
@@ -161,7 +162,9 @@ export default function ResultsPage({ screeningResult }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <h1 style={{ fontSize: '2rem' }}>Screening Risk Dashboard</h1>
+            <h1 style={{ fontSize: '2rem' }}>
+              {childName && childName !== 'Anonymous Child' ? `Screening for ${childName}` : 'Screening Risk Dashboard'}
+            </h1>
             <span style={{
               fontSize: '0.75rem',
               fontWeight: 700,
@@ -174,6 +177,9 @@ export default function ResultsPage({ screeningResult }) {
             </span>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem' }}>
+            {childName && childName !== 'Anonymous Child' && (
+              <strong style={{ color: 'var(--color-primary)' }}>Child: {childName} • </strong>
+            )}
             Non-invasive Scenario-A community risk evaluation across three pediatric undernutrition conditions.
           </p>
         </div>

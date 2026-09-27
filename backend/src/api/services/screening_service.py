@@ -66,13 +66,18 @@ class ScreeningService:
                 f"ScreeningService is not initialized or model integrity check failed: {self.init_error}"
             )
 
-        # Delegate execution to v2 inference engine
-        result = inference_pipeline.predict_child_screening(child_data)
+        # Extract metadata fields not part of the 30 ML features
+        child_data_copy = dict(child_data)
+        child_name = child_data_copy.pop("child_name", "Anonymous Child")
+
+        # Delegate execution to v1 inference engine with exact 30 features
+        result = inference_pipeline.predict_child_screening(child_data_copy)
         if not result.get("valid", False):
             raise ValueError(result.get("errors", ["Invalid screening input."]))
 
         return {
             "success": True,
+            "child_name": child_name or "Anonymous Child",
             "model_version": self.registry["model_version"],
             "feature_schema_version": self.registry["feature_schema_version"],
             "predictions": result["predictions"]

@@ -28,6 +28,8 @@ import {
 } from '../utils/constants';
 
 const INITIAL_FORM = {
+  // Identification
+  child_name: '',
   // A. Child Demographics
   child_age_months: '',
   child_sex_male: '1',
@@ -99,8 +101,9 @@ export default function ScreeningPage({ onScreeningSuccess }) {
   };
 
   const handleFillSample = () => {
-    const sampleFormatted = {};
+    const sampleFormatted = { child_name: 'Aarav Sharma' };
     Object.keys(INITIAL_FORM).forEach((key) => {
+      if (key === 'child_name') return;
       const val = SAMPLE_CHILD_DATA[key];
       sampleFormatted[key] = val !== null && val !== undefined ? String(val) : '';
     });
@@ -192,6 +195,8 @@ export default function ScreeningPage({ onScreeningSuccess }) {
     // Prepare strictly compliant 30-feature payload for Scenario-A v2 API
     const isFirstbornInt = parseInt(formData.is_firstborn, 10);
     const payload = {
+      // Identification
+      child_name: (formData.child_name || '').trim() || 'Anonymous Child',
       // 1. Child
       child_age_months: parseFloat(formData.child_age_months),
       child_sex_male: parseInt(formData.child_sex_male, 10),
@@ -344,6 +349,23 @@ export default function ScreeningPage({ onScreeningSuccess }) {
           </div>
 
           <div className="form-grid">
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label" htmlFor="child_name">
+                Child Name / Identifier (Optional)
+              </label>
+              <input
+                id="child_name"
+                name="child_name"
+                type="text"
+                maxLength={100}
+                className="form-input"
+                value={formData.child_name || ''}
+                onChange={handleChange}
+                placeholder="e.g. Aarav Sharma"
+              />
+              <span className="form-helper">Recorded in MongoDB screening history for health worker follow-up</span>
+            </div>
+
             <div className="form-group">
               <label className="form-label form-label-required" htmlFor="child_age_months">
                 Child Age (Completed Months)

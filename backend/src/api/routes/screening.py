@@ -56,6 +56,7 @@ async def screen_child_endpoint(request: ChildScreeningRequest) -> ScreeningResp
 
         # Persist assessment asynchronously to MongoDB (fail-soft)
         screening_id = await save_screening_record({
+            "child_name": result.get("child_name", "Anonymous Child"),
             "inputs": data_dict,
             "predictions": result.get("predictions", {}),
             "triage": result.get("triage", {}),
