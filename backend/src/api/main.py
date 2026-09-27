@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
     Application lifespan manager.
     Initializes and cryptographically verifies model pipelines at startup.
     Fails startup immediately if model artifacts or checksums are invalid.
+    Also manages MongoDB connection pool lifecycle.
     """
     logger.info("Initializing NutriSense AI Screening Service and verifying model registry...")
     service = ScreeningService.get_instance()
@@ -50,7 +51,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.critical(f"FATAL: Model initialization/integrity audit failed: {e}")
         raise e
+
+    # Initialize MongoDB connection pool (non-blocking / fail-soft)
+    try:
+        from src.api.database import init_db, close_db
+        await init_db()
+    except Exception as e:
+        logger.warning(f"MongoDB initialization skipped or failed: {e}")
+
     yield
+
+    # Cleanup MongoDB connection pool
+    try:
+        from src.api.database import close_db
+        await close_db()
+    except Exception as e:
+        logger.warning(f"Error during MongoDB close: {e}")
+
     logger.info("Shutting down NutriSense AI Backend API.")
 
 

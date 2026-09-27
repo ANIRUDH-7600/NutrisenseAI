@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException, status
 from src.api.schemas import HealthResponse, ModelHealthResponse
 from src.api.services.screening_service import ScreeningService
 
+from src.api.database import check_db_health
+
 router = APIRouter(tags=["Health"])
 
 
@@ -11,6 +13,12 @@ router = APIRouter(tags=["Health"])
 def health_check() -> HealthResponse:
     """Returns basic service health status without touching datasets or models."""
     return HealthResponse(status="healthy")
+
+
+@router.get("/api/v1/health/database", summary="Database (MongoDB) Connectivity Check")
+async def database_health_check():
+    """Checks MongoDB connection state and latency."""
+    return await check_db_health()
 
 
 @router.get("/api/v1/health/model", response_model=ModelHealthResponse, summary="Model Integrity & Readiness Check")

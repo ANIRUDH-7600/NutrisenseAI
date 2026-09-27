@@ -31,6 +31,12 @@ ALLOWED_ORIGINS: List[str] = get_allowed_origins()
 # Registry path
 MODEL_REGISTRY_PATH: str = os.getenv("MODEL_REGISTRY_PATH", "models/model_registry.json")
 
+# Database Configuration (MongoDB)
+MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "nutrisense_ai")
+MONGODB_ENABLED: bool = os.getenv("MONGODB_ENABLED", "true").lower() in ("true", "1", "yes")
+MONGODB_SERVER_SELECTION_TIMEOUT_MS: int = int(os.getenv("MONGODB_TIMEOUT_MS", "2000"))
+
 # API Metadata
 API_TITLE: str = "NutriSense AI: Childhood Malnutrition Risk Intelligence API"
 API_VERSION: str = "1.0.0"

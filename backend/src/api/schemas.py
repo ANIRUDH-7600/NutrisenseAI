@@ -196,6 +196,23 @@ class HealthResponse(BaseModel):
     status: str = "healthy"
 
 
+class ScreeningRecord(BaseModel):
+    """Stored screening assessment record in MongoDB."""
+    screening_id: str
+    created_at: str
+    inputs: Dict[str, Any]
+    predictions: Dict[str, Any]
+    triage: Optional[Dict[str, Any]] = None
+    model_version: Optional[str] = None
+    feature_schema_version: Optional[str] = None
+
+
+class ScreeningListResponse(BaseModel):
+    """List of recent screening records."""
+    total: int
+    screenings: List[ScreeningRecord]
+
+
 class ModelHealthResponse(BaseModel):
     """Readiness and model integrity diagnostic status."""
     status: str

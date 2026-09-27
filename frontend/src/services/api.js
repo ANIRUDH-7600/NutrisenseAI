@@ -90,5 +90,35 @@ export const apiService = {
    */
   async getMetadata() {
     return request('/api/v1/metadata');
+  },
+
+  /**
+   * Database connectivity and status check.
+   */
+  async getDatabaseHealth() {
+    return request('/api/v1/health/database');
+  },
+
+  /**
+   * Retrieves recent screening history records from MongoDB.
+   */
+  async getScreenings(limit = 20, skip = 0) {
+    return request(`/api/v1/screenings?limit=${limit}&skip=${skip}`);
+  },
+
+  /**
+   * Retrieves a single screening record by ID from MongoDB.
+   */
+  async getScreeningById(screeningId) {
+    return request(`/api/v1/screenings/${screeningId}`);
+  },
+
+  /**
+   * Deletes a screening record by ID from MongoDB.
+   */
+  async deleteScreening(screeningId) {
+    return request(`/api/v1/screenings/${screeningId}`, {
+      method: 'DELETE'
+    });
   }
 };
