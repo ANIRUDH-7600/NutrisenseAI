@@ -208,7 +208,8 @@ export default function ResultsPage({ screeningResult }) {
           width: '3rem',
           height: '3rem',
           borderRadius: 'var(--radius-full)',
-          backgroundColor: '#fff',
+          backgroundColor: positiveCount > 0 ? 'rgba(244, 63, 94, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+          border: `1px solid ${positiveCount > 0 ? 'rgba(244, 63, 94, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -218,7 +219,7 @@ export default function ResultsPage({ screeningResult }) {
           {positiveCount > 0 ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
         </div>
         <div>
-          <strong style={{ fontSize: '1.1rem', color: positiveCount > 0 ? 'var(--color-danger)' : 'var(--color-success)' }}>
+          <strong style={{ fontSize: '1.1rem', color: positiveCount > 0 ? '#fb7185' : '#34d399' }}>
             {positiveCount > 0
               ? `${positiveCount} of 3 Undernutrition Indicators Flagged Screen-Positive`
               : 'All 3 Undernutrition Indicators Below Screening Threshold'}
@@ -239,7 +240,7 @@ export default function ResultsPage({ screeningResult }) {
       </div>
 
       {/* Secondary Triage Clinical Guidance Box */}
-      <div className="card" style={{ marginBottom: '2.5rem', backgroundColor: '#f8fafc' }}>
+      <div className="card" style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <Stethoscope size={20} color="var(--color-primary)" />
           <h3 style={{ fontSize: '1.15rem' }}>Secondary Triage & Follow-up Protocols</h3>
