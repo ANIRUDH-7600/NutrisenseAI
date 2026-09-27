@@ -209,6 +209,23 @@ a:hover {
   white-space: nowrap;
 }
 
+.navbar-logo-img {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background: #ffffff;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.navbar-brand:hover .navbar-logo-img {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+}
+
 .brand-icon-wrap {
   width: 2.5rem;
   height: 2.5rem;

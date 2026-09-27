@@ -30,6 +30,31 @@ export default function HomePage() {
           ✦
         </div>
 
+        {/* Floating Brand Logo Emblem */}
+        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            position: 'relative',
+            display: 'inline-block',
+            padding: '4px',
+            borderRadius: 'var(--radius-full)',
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.5), rgba(16, 185, 129, 0.5))',
+            boxShadow: '0 0 35px rgba(56, 189, 248, 0.3)'
+          }}>
+            <img
+              src="/logo.png"
+              alt="NutriSense AI Emblem"
+              style={{
+                width: '4.75rem',
+                height: '4.75rem',
+                borderRadius: 'var(--radius-full)',
+                display: 'block',
+                background: '#ffffff',
+                objectFit: 'cover'
+              }}
+            />
+          </div>
+        </div>
+
         {/* Terminal Micro-Tag */}
         <div style={{ marginBottom: '1.5rem' }}>
           <div className="tag-terminal">

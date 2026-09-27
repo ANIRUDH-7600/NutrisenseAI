@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Activity, ShieldAlert, BookOpen, Menu, X, Sparkles } from 'lucide-react';
+import { ShieldAlert, BookOpen, Menu, X, Sparkles } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,9 +12,7 @@ export default function Navbar() {
     <nav className="navbar" aria-label="Main Navigation">
       <div className="container navbar-inner">
         <Link to="/" className="navbar-brand" onClick={closeMenu}>
-          <div className="brand-icon-wrap">
-            <Activity size={20} />
-          </div>
+          <img src="/logo.png" alt="NutriSense AI Logo" className="navbar-logo-img" />
           <span className="brand-title">NutriSense AI</span>
           <span className="brand-badge">Scenario A</span>
         </Link>
