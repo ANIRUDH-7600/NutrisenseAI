@@ -54,13 +54,18 @@ async def init_db() -> None:
 
         # Create indexes asynchronously
         await _db.screenings.create_index("screening_id", unique=True)
-        await _db.screenings.create_index([("timestamp", -1)])
-        logger.info("[DATABASE] Database indexes verified on 'screenings' collection.")
+        await _db.screenings.create_index([("user_id", 1), ("created_at", -1)])
+        logger.info("[DATABASE] Database indexes verified on 'screenings' collection (user_id + created_at).")
 
         # Create user indexes asynchronously
         await _db.users.create_index("email", unique=True)
         await _db.users.create_index("user_id", unique=True)
         logger.info("[DATABASE] Database indexes verified on 'users' collection.")
+
+        # Create token revocation indexes asynchronously (TTL expiration)
+        await _db.revoked_tokens.create_index("jti", unique=True)
+        await _db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)
+        logger.info("[DATABASE] Database indexes verified on 'revoked_tokens' collection.")
 
 
     except ServerSelectionTimeoutError as e:
@@ -134,10 +139,14 @@ async def check_db_health() -> Dict[str, Any]:
         }
 
 
-async def save_screening_record(record_data: Dict[str, Any]) -> Optional[str]:
+async def save_screening_record(
+    record_data: Dict[str, Any],
+    user_id: Optional[str] = None
+) -> Optional[str]:
     """
     Saves a completed screening assessment into the 'screenings' collection.
     
+    If user_id is provided, attaches it to the document (overriding any client payload value).
     If MongoDB is disconnected or encounters an error, logs a warning and returns None
     so that user requests NEVER fail due to database downtime.
     """
@@ -154,11 +163,15 @@ async def save_screening_record(record_data: Dict[str, Any]) -> Optional[str]:
             **record_data,
         }
 
+        # Enforce server-side authenticated user_id
+        if user_id is not None:
+            document["user_id"] = str(user_id)
+
         # Prevent duplicate _id conflict if dict had one
         document.pop("_id", None)
 
         result = await _db.screenings.insert_one(document)
-        logger.info(f"[DATABASE] Saved screening record '{screening_id}' (DocID: {result.inserted_id}).")
+        logger.info(f"[DATABASE] Saved screening record '{screening_id}' (DocID: {result.inserted_id}) for user '{document.get('user_id')}'.")
         return screening_id
 
     except PyMongoError as e:
@@ -169,14 +182,24 @@ async def save_screening_record(record_data: Dict[str, Any]) -> Optional[str]:
         return None
 
 
-async def get_screening_records(limit: int = 20, skip: int = 0) -> List[Dict[str, Any]]:
-    """Retrieves recent screening records, ordered from newest to oldest."""
+async def get_screening_records(
+    user_id: Optional[str] = None,
+    limit: int = 20,
+    skip: int = 0
+) -> List[Dict[str, Any]]:
+    """Retrieves recent screening records, ordered from newest to oldest, optionally filtered by user_id."""
     if _db is None or not _is_connected:
         return []
 
     try:
+        query: Dict[str, Any] = {}
+        if user_id is not None:
+            if not isinstance(user_id, str):
+                return []
+            query["user_id"] = user_id
+
         cursor = (
-            _db.screenings.find({}, {"_id": 0})
+            _db.screenings.find(query, {"_id": 0})
             .sort("created_at", -1)
             .skip(max(0, skip))
             .limit(min(100, max(1, limit)))
@@ -187,26 +210,48 @@ async def get_screening_records(limit: int = 20, skip: int = 0) -> List[Dict[str
         return []
 
 
-async def get_screening_record_by_id(screening_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieves a single screening assessment by its unique screening_id."""
+async def get_screening_record_by_id(
+    screening_id: str,
+    user_id: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Retrieves a single screening assessment by its unique screening_id, scoped by owner user_id if provided."""
     if _db is None or not _is_connected:
         return None
 
+    # Enforce strict string type to defend against NoSQL injection
+    if not isinstance(screening_id, str) or (user_id is not None and not isinstance(user_id, str)):
+        return None
+
     try:
-        record = await _db.screenings.find_one({"screening_id": screening_id}, {"_id": 0})
+        query: Dict[str, Any] = {"screening_id": screening_id}
+        if user_id is not None:
+            query["user_id"] = user_id
+
+        record = await _db.screenings.find_one(query, {"_id": 0})
         return record
     except Exception as e:
         logger.warning(f"[DATABASE] Failed to fetch screening record '{screening_id}': {e}")
         return None
 
 
-async def delete_screening_record(screening_id: str) -> bool:
-    """Deletes a screening record by its unique screening_id."""
+async def delete_screening_record(
+    screening_id: str,
+    user_id: Optional[str] = None
+) -> bool:
+    """Deletes a screening record by its unique screening_id, scoped by owner user_id if provided."""
     if _db is None or not _is_connected:
         return False
 
+    # Enforce strict string type to defend against NoSQL injection
+    if not isinstance(screening_id, str) or (user_id is not None and not isinstance(user_id, str)):
+        return False
+
     try:
-        result = await _db.screenings.delete_one({"screening_id": screening_id})
+        query: Dict[str, Any] = {"screening_id": screening_id}
+        if user_id is not None:
+            query["user_id"] = user_id
+
+        result = await _db.screenings.delete_one(query)
         return result.deleted_count > 0
     except Exception as e:
         logger.warning(f"[DATABASE] Failed to delete screening record '{screening_id}': {e}")
@@ -252,13 +297,16 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
 
 async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Retrieves a user document by normalized email address from the 'users' collection."""
-    if _db is None or not _is_connected:
+    if _db is None or not _is_connected or not isinstance(email, str):
         return None
 
     normalized_email = email.strip().lower()
     try:
         user = await _db.users.find_one({"email": normalized_email})
         return user
+    except PyMongoError as e:
+        logger.warning(f"[DATABASE] Error retrieving user by email '{normalized_email}': {e}")
+        raise
     except Exception as e:
         logger.warning(f"[DATABASE] Error retrieving user by email '{normalized_email}': {e}")
         return None
@@ -266,12 +314,15 @@ async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     """Retrieves a user document by user_id from the 'users' collection."""
-    if _db is None or not _is_connected:
+    if _db is None or not _is_connected or not isinstance(user_id, str):
         return None
 
     try:
         user = await _db.users.find_one({"user_id": user_id})
         return user
+    except PyMongoError as e:
+        logger.warning(f"[DATABASE] Error retrieving user by user_id '{user_id}': {e}")
+        raise
     except Exception as e:
         logger.warning(f"[DATABASE] Error retrieving user by user_id '{user_id}': {e}")
         return None
@@ -279,7 +330,7 @@ async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
 
 async def delete_user(user_id: str) -> bool:
     """Deletes a user account by user_id (used for test teardowns and administrative actions)."""
-    if _db is None or not _is_connected:
+    if _db is None or not _is_connected or not isinstance(user_id, str):
         return False
 
     try:
@@ -288,4 +339,83 @@ async def delete_user(user_id: str) -> bool:
     except Exception as e:
         logger.warning(f"[DATABASE] Error deleting user '{user_id}': {e}")
         return False
+
+
+# ==============================================================================
+# Token Revocation Operations (Phase 4)
+# ==============================================================================
+
+async def revoke_token(jti: str, user_id: str, expires_at: datetime) -> bool:
+    """
+    Revokes a JWT token by storing its unique jti in the 'revoked_tokens' collection.
+    Idempotent: if already revoked, returns True safely without error.
+    Raises RuntimeError if database is currently disconnected.
+    Raises PyMongoError if query execution fails.
+    """
+    if _db is None or not _is_connected:
+        raise RuntimeError("Database is currently disconnected or unavailable.")
+
+    now_dt = datetime.now(timezone.utc)
+    document = {
+        "jti": str(jti),
+        "user_id": str(user_id),
+        "revoked_at": now_dt,
+        "expires_at": expires_at,
+    }
+
+    try:
+        query_res = _db.revoked_tokens.update_one(
+            {"jti": str(jti)},
+            {"$setOnInsert": document},
+            upsert=True
+        )
+        if hasattr(query_res, "__await__"):
+            await query_res
+        logger.info(f"[DATABASE] Token jti '{jti}' for user '{user_id}' marked as revoked.")
+        return True
+    except DuplicateKeyError:
+        return True
+    except PyMongoError as e:
+        logger.warning(f"[DATABASE] Error revoking token jti '{jti}': {e}")
+        raise
+
+
+async def is_token_revoked(jti: str) -> bool:
+    """
+    Checks if a JWT jti is recorded in the 'revoked_tokens' collection.
+    Returns True if revoked, False otherwise.
+    Raises RuntimeError if database is disconnected.
+    Raises PyMongoError if query execution fails.
+    """
+    if _db is None or not _is_connected:
+        raise RuntimeError("Database is currently disconnected or unavailable.")
+
+    try:
+        query_res = _db.revoked_tokens.find_one({"jti": str(jti)})
+        if hasattr(query_res, "__await__"):
+            record = await query_res
+        else:
+            record = None
+        return record is not None
+    except PyMongoError as e:
+        logger.warning(f"[DATABASE] Error checking revocation for jti '{jti}': {e}")
+        raise
+
+
+async def clean_expired_revocations() -> int:
+    """
+    Explicit cleanup helper to remove any expired revocation entries.
+    Useful for testing or manual pruning alongside MongoDB's automatic TTL index.
+    """
+    if _db is None or not _is_connected:
+        return 0
+
+    now_dt = datetime.now(timezone.utc)
+    try:
+        result = await _db.revoked_tokens.delete_many({"expires_at": {"$lte": now_dt}})
+        return result.deleted_count
+    except Exception as e:
+        logger.warning(f"[DATABASE] Error cleaning expired revocations: {e}")
+        return 0
+
 

@@ -203,8 +203,9 @@ class HealthResponse(BaseModel):
 
 
 class ScreeningRecord(BaseModel):
-    """Stored screening assessment record in MongoDB."""
+    """Stored screening assessment record in MongoDB with user ownership."""
     screening_id: str
+    user_id: Optional[str] = None
     child_name: Optional[str] = "Anonymous Child"
     created_at: str
     inputs: Dict[str, Any]
@@ -336,4 +337,10 @@ class TokenResponse(BaseModel):
     token_type: str = Field("bearer", description="Token authorization type.")
     expires_in: int = Field(..., description="Token lifespan in seconds.")
     user: UserResponse = Field(..., description="Authenticated user profile.")
+
+
+class LogoutResponse(BaseModel):
+    """Structured response for successful logout and token revocation."""
+    success: bool = Field(True, description="Indicates whether logout succeeded.")
+    message: str = Field("Successfully logged out.", description="User-facing confirmation message.")
 

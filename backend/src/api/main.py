@@ -91,11 +91,25 @@ def create_app() -> FastAPI:
             CORSMiddleware,
             allow_origins=allowed_origins,
             allow_credentials=True,
-            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
             allow_headers=["*"]
         )
 
-    # 2. Operational Privacy-Preserving Middleware
+    # 2. HTTP Security Headers Middleware
+    @app.middleware("http")
+    async def security_headers_middleware(request: Request, call_next: Callable) -> Response:
+        """Injects defensive HTTP security headers into every API response."""
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+    # 3. Operational Privacy-Preserving Middleware
     @app.middleware("http")
     async def operational_logging_middleware(request: Request, call_next: Callable) -> Response:
         """
@@ -163,7 +177,8 @@ def create_app() -> FastAPI:
                     "message": message,
                     "details": details
                 }
-            }
+            },
+            headers=exc.headers
         )
 
     @app.exception_handler(Exception)

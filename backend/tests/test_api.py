@@ -30,14 +30,47 @@ class TestBackendAPI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Initializes test client with startup lifespan context."""
+        """Initializes test client with startup lifespan context and authenticated test session."""
+        from unittest.mock import AsyncMock, MagicMock
+        from src.api.security import create_access_token
+
         cls.client_context = TestClient(app, raise_server_exceptions=False)
         cls.client = cls.client_context.__enter__()
+
+        # Set up mock database session for authentication dependency after lifespan startup
+        cls.mock_db = MagicMock()
+        cls.test_user = {
+            "user_id": "usr_test_api_worker",
+            "name": "Dr. Testing Health Worker",
+            "email": "test.worker@nutrisense.ai",
+            "role": "health_worker",
+            "is_active": True,
+            "created_at": "2026-09-28T10:00:00Z"
+        }
+
+        async def mock_find_one_users(filter_dict, projection=None):
+            if filter_dict.get("user_id") == "usr_test_api_worker":
+                return copy.deepcopy(cls.test_user)
+            return None
+
+        cls.mock_db.users.find_one = AsyncMock(side_effect=mock_find_one_users)
+        cls.mock_db.revoked_tokens.find_one = AsyncMock(return_value=None)
+        cls.mock_db.screenings.insert_one = AsyncMock(return_value=MagicMock(inserted_id="mock_screening_id"))
+
+        cls.db_patcher = patch("src.api.database._db", cls.mock_db)
+        cls.conn_patcher = patch("src.api.database._is_connected", True)
+        cls.db_patcher.start()
+        cls.conn_patcher.start()
+
+        cls.token = create_access_token(user_id="usr_test_api_worker", email="test.worker@nutrisense.ai")
+        cls.client.headers.update({"Authorization": f"Bearer {cls.token}"})
         cls.valid_payload = get_sample_valid_input()
 
     @classmethod
     def tearDownClass(cls):
-        """Exits lifespan context cleanly."""
+        """Exits lifespan context and cleans up database patches cleanly."""
+        cls.db_patcher.stop()
+        cls.conn_patcher.stop()
         cls.client_context.__exit__(None, None, None)
 
     # -------------------------------------------------------------------------

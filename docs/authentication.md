@@ -221,21 +221,261 @@ The registration endpoint is live and fully tested:
 
 ---
 
-## 10. Implementation Status Tracker
+---
+
+## 10. Implemented Login Flow (`POST /api/v1/auth/login`)
+
+The login endpoint authenticates registered health workers and issues a cryptographically signed JWT bearer token:
+
+- **Endpoint**: `POST /api/v1/auth/login`
+- **HTTP Method**: `POST`
+- **Request Format**:
+  ```json
+  {
+    "email": "priya.sen@district-hospital.org",
+    "password": "SecurePassword2026!"
+  }
+  ```
+- **Successful Response (HTTP 200 OK)**:
+  ```json
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "bearer",
+    "expires_in": 86400,
+    "user": {
+      "user_id": "usr_9f8b2c4e1a0d",
+      "name": "Dr. Priya Sen",
+      "email": "priya.sen@district-hospital.org",
+      "role": "health_worker",
+      "created_at": "2026-09-28T10:00:00Z",
+      "is_active": true
+    }
+  }
+  ```
+
+### Processing Pipeline:
+1. **Email Normalization**:
+   - Normalized exactly identically to registration (`request.email.strip().lower()`).
+2. **User Document Retrieval**:
+   - Queries MongoDB `users` collection using the normalized email.
+3. **Bcrypt Password Verification**:
+   - Uses constant-time `verify_password()` (`bcrypt.checkpw`) against the stored `password_hash`.
+4. **Active Account Enforcement**:
+   - Checks `is_active: true`.
+5. **Zero User Enumeration (Generic 401)**:
+   - For nonexistent email, incorrect password, or inactive account, returns an identical generic HTTP 401 response:
+     ```json
+     {
+       "success": false,
+       "error": {
+         "code": "INVALID_CREDENTIALS",
+         "message": "Invalid email or password.",
+         "details": []
+       }
+     }
+     ```
+6. **JWT Issuance**:
+   - Signs a standard JWT with claims `sub`, `email`, `role`, `iat`, `exp`, `jti` using `JWT_SECRET` and `JWT_ALGORITHM` (`HS256`).
+   - Lifetime defaults to `ACCESS_TOKEN_EXPIRE_MINUTES * 60` seconds (24 hours / 86400 seconds).
+
+---
+
+## 11. Current User Profile Endpoint (`GET /api/v1/auth/me`)
+
+The `/auth/me` endpoint returns safe profile information for the authenticated health worker:
+
+- **Endpoint**: `GET /api/v1/auth/me`
+- **Required Header**: `Authorization: Bearer <JWT>`
+- **Response Format (HTTP 200 OK)**:
+  ```json
+  {
+    "user_id": "usr_9f8b2c4e1a0d",
+    "name": "Dr. Priya Sen",
+    "email": "priya.sen@district-hospital.org",
+    "role": "health_worker",
+    "created_at": "2026-09-28T10:00:00Z",
+    "is_active": true
+  }
+  ```
+
+### Verification Pipeline:
+1. **Header Parsing**: Extracts Bearer token via `HTTPBearer(auto_error=False)` dependency.
+2. **Cryptographic Validation**: Decodes and verifies HS256 signature with `JWT_SECRET`.
+3. **Expiration Enforcement**: Rejects expired tokens with HTTP 401 (`TOKEN_EXPIRED`).
+4. **Subject Verification**: Extracts `sub` (user_id) from verified claims.
+5. **Active Account Verification**: Queries MongoDB `users` collection to confirm the user exists and is active.
+6. **Safe Response Guarantee**:
+   - Strictly returns `UserResponse`.
+   - Never exposes `password`, `password_hash`, database `_id`, or `JWT_SECRET`.
+
+---
+
+---
+
+## 12. Implemented Logout & Token Revocation Flow (`POST /api/v1/auth/logout`)
+
+The logout endpoint securely invalidates the caller's JWT token session by storing its unique cryptographic identifier (`jti`) in a MongoDB revocation store:
+
+- **Endpoint**: `POST /api/v1/auth/logout`
+- **HTTP Method**: `POST`
+- **Required Header**: `Authorization: Bearer <JWT>`
+- **Successful Response (HTTP 200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Successfully logged out."
+  }
+  ```
+
+### Revocation Architecture:
+1. **Token Identification**:
+   - The token's unique `jti` (UUID hex) and subject `user_id` are extracted from verified claims.
+2. **Revocation Persistence (`revoked_tokens` Collection)**:
+   - Persists a minimal metadata document strictly omitting the raw JWT:
+     ```json
+     {
+       "jti": "8f1a2c3e4b5d6e7f8a9b0c1d2e3f4a5b",
+       "user_id": "usr_9f8b2c4e1a0d",
+       "revoked_at": "2026-09-28T12:00:00Z",
+       "expires_at": "2026-09-29T12:00:00Z"
+     }
+     ```
+   - Raw tokens and Authorization headers are never stored in the database or written to logs.
+3. **Session Isolation**:
+   - **Multi-user isolation**: Logging out User A invalidates only `jti_A`. User B's token remains completely valid.
+   - **Multi-session isolation**: Each login issues a fresh unique `jti`. Logging out one device/session does not terminate other concurrent sessions belonging to the same health worker.
+4. **Automated Pruning & TTL Cleanup**:
+   - A MongoDB TTL index (`expireAfterSeconds=0` on `expires_at`) automatically removes expired revocation documents once the underlying JWT reaches natural expiration.
+   - A programmatic cleanup function (`clean_expired_revocations()`) provides explicit pruning support.
+5. **Idempotency**:
+   - Repeated logout requests with the same token succeed idempotently (`200 OK`) without crashing or duplicating records (`upsert=True`).
+6. **Authentication Dependency Enforcement**:
+   - When a revoked token is presented to [`get_current_user`](file:///d:/finalyearproj/Nutrisense-Ai/backend/src/api/security.py#L135), the dependency detects the revoked `jti` in MongoDB and immediately halts execution with HTTP 401 (`TOKEN_REVOKED`).
+
+## 14. Protected Screening Endpoints (Phase 5 — Route Protection)
+
+### Overview & Security Scope
+In Phase 5, all four operational screening endpoints are protected using FastAPI's `Depends(get_current_user)`. Unauthenticated or invalid requests are rejected immediately at the gateway layer before reaching screening or database logic.
+
+```
++-------------------------------------------------------------+
+|                  Incoming Client Request                    |
+|  POST /api/v1/screen                                        |
+|  GET  /api/v1/screenings                                    |
+|  GET  /api/v1/screenings/{screening_id}                     |
+|  DELETE /api/v1/screenings/{screening_id}                  |
++-------------------------------------------------------------+
+                              |
+                              v
++-------------------------------------------------------------+
+|              FastAPI Dependency: get_current_user            |
+|  1. Extract Bearer token from Authorization header           |
+|     - Missing / empty / non-Bearer  --> HTTP 401            |
+|  2. Decode & verify JWT signature (HS256)                   |
+|     - Tampered / malformed / expired --> HTTP 401           |
+|  3. Check revocation status in MongoDB revoked_tokens       |
+|     - Revoked (logged out)          --> HTTP 401            |
+|  4. Fetch user document from MongoDB users collection        |
+|     - User not found / inactive     --> HTTP 401            |
+|     - Database connection error     --> HTTP 503            |
++-------------------------------------------------------------+
+                              |
+                              | [Authenticated & Active User]
+                              v
++-------------------------------------------------------------+
+|               Existing Screening Business Logic             |
+|  - Validates 30-feature Scenario A input                     |
+|  - Executes LightGBM unweighted ensemble inference           |
+|  - Applies locked clinical thresholds                        |
+|  - Returns risk scores, probabilities, and SHAP explanations |
+|  - Saves/retrieves screening records                         |
++-------------------------------------------------------------+
+```
+
+### Protected Endpoints:
+1. `POST /api/v1/screen`: Requires valid Bearer JWT. Validates input child profile and generates ML predictions while rejecting unauthenticated traffic.
+2. `GET /api/v1/screenings`: Requires valid Bearer JWT. Retrieves recent screening histories.
+3. `GET /api/v1/screenings/{screening_id}`: Requires valid Bearer JWT. Retrieves screening record by identifier.
+4. `DELETE /api/v1/screenings/{screening_id}`: Requires valid Bearer JWT. Removes screening record by identifier.
+
+### 401 Rejection Behavior Matrix:
+All unauthenticated requests receive standardized JSON error envelopes without leaking internal details:
+
+| Request Condition | HTTP Status | Error Code | Response Message |
+| :--- | :--- | :--- | :--- |
+| Missing `Authorization` header | 401 | `AUTHENTICATION_REQUIRED` | Authentication required. Please provide a valid Bearer token. |
+| Empty Bearer token (`Bearer `) | 401 | `AUTHENTICATION_REQUIRED` | Authentication required. Please provide a valid Bearer token. |
+| Non-Bearer scheme (`Basic xyz`) | 401 | `AUTHENTICATION_REQUIRED` | Authentication required. Please provide a valid Bearer token. |
+| Malformed token string | 401 | `INVALID_TOKEN` | Invalid authentication token. |
+| Tampered token signature | 401 | `INVALID_TOKEN` | Invalid authentication token. |
+| Expired token (`exp` elapsed) | 401 | `TOKEN_EXPIRED` | Authentication token has expired. |
+| Revoked token (logged out) | 401 | `TOKEN_REVOKED` | Authentication token has been revoked. |
+| User inactive (`is_active=false`)| 401 | `USER_INACTIVE` | User account is inactive. |
+| Nonexistent user (`sub` not in DB)| 401 | `USER_NOT_FOUND` | User account not found. |
+
+### Critical Architectural Distinction: Authentication vs. Authorization
+> [!IMPORTANT]
+> **Phase 5 provides AUTHENTICATION protection.**
+> It verifies *who* the caller is and ensures that only authenticated, active healthcare workers with valid, unrevoked JWT credentials can reach the screening API endpoints.
+>
+> **Phase 6 will provide RESOURCE OWNERSHIP / AUTHORIZATION protection.**
+> Phase 6 will associate each screening document with the caller (`screening.user_id = authenticated_user.user_id`) and enforce strict ownership filtering so users can only view or delete their own screening records.
+>
+> **Do not claim IDOR/BOLA protection is complete until Phase 6 is implemented.**
+
+---
+
+## 15. Security Considerations & Error Codes
+
+### Standardized Error Responses:
+| Scenario | HTTP Status | Error Code | Description |
+| :--- | :--- | :--- | :--- |
+| Nonexistent email on login | 401 | `INVALID_CREDENTIALS` | Generic message to prevent email enumeration. |
+| Wrong password on login | 401 | `INVALID_CREDENTIALS` | Generic message to prevent brute-force timing clues. |
+| Inactive user on login | 401 | `INVALID_CREDENTIALS` | Generic message preventing deactivation enumeration. |
+| Missing Authorization header | 401 | `AUTHENTICATION_REQUIRED` | Bearer token required. |
+| Malformed Authorization header | 401 | `AUTHENTICATION_REQUIRED` | Non-Bearer or empty token. |
+| Tampered JWT signature | 401 | `INVALID_TOKEN` | Cryptographic signature mismatch. |
+| Malformed JWT payload | 401 | `INVALID_TOKEN` | Unparseable token structure or missing jti. |
+| Expired JWT | 401 | `TOKEN_EXPIRED` | Expired lifetime. |
+| Revoked JWT token | 401 | `TOKEN_REVOKED` | Token invalidated via logout. |
+| Nonexistent user token | 401 | `USER_NOT_FOUND` | User deleted or absent from DB. |
+| Deactivated account token | 401 | `USER_INACTIVE` | Account deactivated in DB. |
+| Database unreachable | 503 | `DATABASE_UNAVAILABLE` | Fail-safe without leaking stack traces. |
+
+### Operational Privacy Policy:
+- **Zero Credential Logging**: Plaintext passwords, password hashes, JWT secrets, and `Authorization` headers are never logged.
+- **Zero Feature/Body Logging**: Child screening request attributes and predictions remain strictly unlogged in production telemetry.
+- **Security Limitation**: Token revocation requires a low-latency check against MongoDB `revoked_tokens`. If the database is disconnected, authentication endpoints fail safe with HTTP 503 rather than permitting potentially revoked tokens.
+
+---
+
+## 16. Implementation Status Tracker
 
 ### IMPLEMENTED:
-- [x] **MongoDB `users` collection**: Initialized with unique indexes on `email` and `user_id`.
-- [x] **Email uniqueness enforcement**: Database index and pre-check validation preventing duplicate accounts.
-- [x] **Email normalization**: Consistent lowercase trimming across all checks and storage.
-- [x] **Password hashing**: Salted bcrypt hashing (work factor 12), zero plaintext persistence.
-- [x] **Registration endpoint (`POST /api/v1/auth/register`)**: Returns HTTP 201 with sanitized `UserResponse`.
-- [x] **Automated registration tests**: 11 unit/integration test cases covering all validation, duplicate, and database failure modes.
+- [x] **Signup (`POST /api/v1/auth/register`)**: Account creation with input validation, password complexity, and duplicate rejection (Phase 2).
+- [x] **Login (`POST /api/v1/auth/login`)**: Generic 401 anti-enumeration defenses, bcrypt verification, JWT generation (Phase 3).
+- [x] **Current User Profile (`GET /api/v1/auth/me`)**: Token authentication dependency resolving safe active user identity from MongoDB (Phase 3).
+- [x] **Logout (`POST /api/v1/auth/logout`)**: Session token revocation via MongoDB `revoked_tokens` store (Phase 4).
+- [x] **Token Revocation (`jti` tracking & TTL pruning)**: Granular per-session revocation with automated MongoDB TTL index cleanup (Phase 4).
+- [x] **Protected Screening Routes (`POST /screen`, `GET /screenings`, `GET /screenings/{id}`, `DELETE /screenings/{id}`)**: Phase 5 complete with `Depends(get_current_user)`.
+- [x] **User-Owned Screening Records & IDOR/BOLA Protection**: Phase 6 complete with strict resource ownership filtering and composite indexing (`user_id` + `created_at`).
+- [x] **Security Hardening**: Phase 7 complete with NoSQL injection guards, sliding-window rate limiting (HTTP 429), defensive HTTP security headers, CORS restrictions, and pagination bounds.
+- [x] **Automated Test Suites**:
+  - Phase 1 Security Tests: 8 passing
+  - Phase 2 Registration Tests: 11 passing
+  - Phase 3 Login Tests: 22 passing
+  - Phase 4 Logout Tests: 15 passing
+  - Phase 5 Route Protection Tests: 44 passing
+  - Phase 6 Ownership / IDOR Tests: 14 passing
+  - Phase 7 Security Hardening Tests: 11 passing
+  - Existing API, Database & Inference Tests: 46 passing
+  - **Total Backend Tests**: 171 passing (100%)
+  - **Total Frontend Tests**: 9 passing (100%)
 
 ### NOT YET IMPLEMENTED (Scheduled for subsequent phases):
-- [ ] **Login (`POST /api/v1/auth/login`)**: Phase 3
-- [ ] **Current User Profile (`GET /api/v1/auth/me`)**: Phase 3
-- [ ] **Logout**: Phase 4
-- [ ] **Server-side route protection (`get_current_user`) enforcement on screening endpoints**: Phase 5
-- [ ] **User-owned screening records & IDOR filtering**: Phase 6
-- [ ] **Frontend authentication UI (Signup, Login, Dashboard)**: Phases 11–13
+- [ ] **Frontend Authentication UI (Login, Signup, User Menu)**: Phases 11–13
+- [ ] **Final Deployment & Production Environment Configuration**: Phase 14
+
+
 

@@ -142,7 +142,7 @@ async def get_current_user(
     
     Returns safe user dict strictly without password_hash.
     """
-    if credentials is None or not credentials.credentials:
+    if credentials is None or not credentials.credentials or not credentials.credentials.strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -153,7 +153,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    token = credentials.credentials
+    token = credentials.credentials.strip()
     payload = decode_access_token(token)
     user_id = payload.get("sub")
     if not user_id:
@@ -167,46 +167,96 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # Verify against MongoDB if database is connected
-    from src.api.database import get_db
-    db = get_db()
-    if db is not None:
-        user_doc = await db.users.find_one({"user_id": user_id})
-        if not user_doc:
+    jti = payload.get("jti")
+    if not jti:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "Authentication token is missing required jti identifier.",
+                "details": []
+            },
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Verify against MongoDB
+    import src.api.database as db_mod
+    if not db_mod._is_connected or db_mod.get_db() is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "DATABASE_UNAVAILABLE",
+                "message": "Database service is temporarily unavailable. Please try again later.",
+                "details": []
+            }
+        )
+
+    # Verify token has not been revoked
+    try:
+        if await db_mod.is_token_revoked(jti):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={
-                    "code": "USER_NOT_FOUND",
-                    "message": "User associated with token no longer exists.",
+                    "code": "TOKEN_REVOKED",
+                    "message": "Authentication token has been revoked. Please log in again.",
                     "details": []
                 },
                 headers={"WWW-Authenticate": "Bearer"}
             )
-        if not user_doc.get("is_active", True):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "USER_INACTIVE",
-                    "message": "User account has been deactivated.",
-                    "details": []
-                }
-            )
-        
-        # Return safe dictionary (no password_hash)
-        return {
-            "user_id": user_doc.get("user_id", str(user_doc.get("_id"))),
-            "name": user_doc.get("name", "User"),
-            "email": user_doc.get("email"),
-            "role": user_doc.get("role", "health_worker"),
-            "created_at": user_doc.get("created_at"),
-            "is_active": user_doc.get("is_active", True),
-        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Database error checking token revocation for jti '{jti}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "DATABASE_UNAVAILABLE",
+                "message": "Database service is temporarily unavailable. Please try again later.",
+                "details": []
+            }
+        )
 
-    # If DB is temporarily disconnected / stateless mode, return claims payload
+    db = db_mod.get_db()
+    try:
+        user_doc = await db.users.find_one({"user_id": user_id})
+    except Exception as e:
+        logger.warning(f"Database error resolving user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "DATABASE_UNAVAILABLE",
+                "message": "Database service is temporarily unavailable. Please try again later.",
+                "details": []
+            }
+        )
+
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "USER_NOT_FOUND",
+                "message": "User associated with token no longer exists.",
+                "details": []
+            },
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    if not user_doc.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "USER_INACTIVE",
+                "message": "User account has been deactivated.",
+                "details": []
+            },
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Return safe dictionary strictly without password_hash or internal secrets
     return {
-        "user_id": user_id,
-        "name": payload.get("name", "Health Worker"),
-        "email": payload.get("email"),
-        "role": payload.get("role", "health_worker"),
-        "is_active": True,
+        "user_id": user_doc.get("user_id", str(user_doc.get("_id"))),
+        "name": user_doc.get("name", "User"),
+        "email": user_doc.get("email"),
+        "role": user_doc.get("role", "health_worker"),
+        "created_at": user_doc.get("created_at"),
+        "is_active": user_doc.get("is_active", True),
     }
