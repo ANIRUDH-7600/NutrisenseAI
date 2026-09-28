@@ -51,6 +51,13 @@ MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "nutrisense_ai")
 MONGODB_ENABLED: bool = os.getenv("MONGODB_ENABLED", "true").lower() in ("true", "1", "yes")
 MONGODB_SERVER_SELECTION_TIMEOUT_MS: int = int(os.getenv("MONGODB_TIMEOUT_MS", "2000"))
 
+# Authentication & Security Configuration (JWT & Password Hashing)
+JWT_SECRET: str = os.getenv("JWT_SECRET", "dev_nutrisense_jwt_insecure_secret_key_change_in_production_32chars")
+JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+BCRYPT_ROUNDS: int = int(os.getenv("BCRYPT_ROUNDS", "12"))
+
+
 # API Metadata
 API_TITLE: str = "NutriSense AI: Childhood Malnutrition Risk Intelligence API"
 API_VERSION: str = "1.0.0"

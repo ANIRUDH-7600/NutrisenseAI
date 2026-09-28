@@ -39,5 +39,10 @@ python-dotenv>=1.0.0
 motor>=3.7.0
 pymongo>=4.9.0
 
+# Authentication & Security
+pyjwt>=2.8.0
+bcrypt>=4.1.0
+
 # Quality Assurance & Testing
 pytest>=8.0.0
+

@@ -3,8 +3,10 @@ Pydantic schemas for request validation and response serialization.
 NutriSense AI Scenario A Community Pre-Screening API (v2.0.0, 30 features).
 """
 
+import re
 from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
+
 
 # Excluded anthropometric, clinical, survey leakage variables, and sensitive social attributes
 PROHIBITED_VARS = {
@@ -250,3 +252,88 @@ class ErrorDetail(BaseModel):
 class ErrorResponse(BaseModel):
     success: bool = False
     error: ErrorDetail
+
+
+# ==============================================================================
+# Authentication Schemas (Phase 1)
+# ==============================================================================
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
+
+class UserRegisterRequest(BaseModel):
+    """Registration request payload for health worker account creation."""
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=2, max_length=100, description="Full name of health worker or clinician.")
+    email: str = Field(..., max_length=255, description="Unique account email address.")
+    password: str = Field(..., min_length=8, max_length=128, description="Account password (min 8 characters).")
+    confirm_password: Optional[str] = Field(None, max_length=128, description="Password confirmation.")
+    role: Optional[str] = Field("health_worker", description="Account authorization role.")
+
+    @field_validator("name")
+    @classmethod
+    def sanitize_name(cls, v: str) -> str:
+        name = v.strip()
+        if len(name) < 2:
+            raise ValueError("Name must be at least 2 characters long.")
+        return name
+
+    @field_validator("email")
+    @classmethod
+    def validate_and_normalize_email(cls, v: str) -> str:
+        email = v.strip().lower()
+        if not EMAIL_REGEX.match(email):
+            raise ValueError("Invalid email address format.")
+        return email
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if len(v) > 128:
+            raise ValueError("Password cannot exceed 128 characters.")
+        has_letter = any(c.isalpha() for c in v)
+        has_digit = any(c.isdigit() for c in v)
+        if not (has_letter and has_digit):
+            raise ValueError("Password must contain at least one letter and one number.")
+        return v
+
+    @model_validator(mode="after")
+    def check_password_match(self) -> "UserRegisterRequest":
+        if self.confirm_password is not None and self.password != self.confirm_password:
+            raise ValueError("Passwords do not match.")
+        return self
+
+
+class UserLoginRequest(BaseModel):
+    """Login credentials payload."""
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(..., description="Registered account email.")
+    password: str = Field(..., description="Account password.")
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class UserResponse(BaseModel):
+    """Public user identity information (strictly excludes password_hash)."""
+    user_id: str = Field(..., description="Unique internal user identifier.")
+    name: str = Field(..., description="Full user name.")
+    email: str = Field(..., description="Normalized email address.")
+    role: str = Field("health_worker", description="User role.")
+    created_at: Optional[str] = Field(None, description="Account creation timestamp (ISO 8601 UTC).")
+    is_active: bool = Field(True, description="Account active status.")
+
+
+class TokenResponse(BaseModel):
+    """Authentication token response issued upon successful login or registration."""
+    access_token: str = Field(..., description="Cryptographically signed JWT bearer token.")
+    token_type: str = Field("bearer", description="Token authorization type.")
+    expires_in: int = Field(..., description="Token lifespan in seconds.")
+    user: UserResponse = Field(..., description="Authenticated user profile.")
+
