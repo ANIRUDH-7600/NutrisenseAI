@@ -4,9 +4,7 @@ import {
   ArrowRight,
   ShieldAlert,
   HeartPulse,
-  BarChart3,
-  HelpCircle,
-  FileText
+  BarChart3
 } from 'lucide-react';
 import DisclaimerBanner from '../components/DisclaimerBanner';
 

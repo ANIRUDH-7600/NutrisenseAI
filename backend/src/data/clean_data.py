@@ -7,7 +7,6 @@ import os
 import json
 import numpy as np
 import pandas as pd
-from pandas.io.stata import StataReader
 
 RAW_DTA_PATH = "IAKR7EDT/IAKR7EFL.DTA"
 INTERIM_CSV_GZ_PATH = "data/interim/cleaned_u5_data.csv.gz"

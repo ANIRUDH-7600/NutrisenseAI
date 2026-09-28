@@ -35,8 +35,6 @@ from src.api.security import (
 from src.api.database import (
     get_user_by_email,
     create_user,
-    revoke_token,
-    get_db,
 )
 from src.api.config import ACCESS_TOKEN_EXPIRE_MINUTES
 

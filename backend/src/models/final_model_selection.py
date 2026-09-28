@@ -12,8 +12,6 @@ STRICT RULE: The test partition (N = 33,069) is NEVER loaded, predicted, or eval
 
 import json
 import os
-import sys
-import numpy as np
 import pandas as pd
 
 MODEL_COMPARISON_JSON = "data/interim/model_comparison_metrics.json"

@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Cpu,
-  CheckCircle2,
   AlertTriangle,
   RotateCw,
   Server,
   ShieldCheck,
-  Layers,
-  FileCode,
   Tag,
   Clock
 } from 'lucide-react';

@@ -4,12 +4,8 @@ import {
   Database,
   Cpu,
   Target,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
   AlertTriangle,
-  Layers,
-  HelpCircle
+  Layers
 } from 'lucide-react';
 import DisclaimerBanner from '../components/DisclaimerBanner';
 

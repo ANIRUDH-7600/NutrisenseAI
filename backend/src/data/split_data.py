@@ -9,7 +9,6 @@ Strict zero-leakage assertions verify that no household appears in more than one
 """
 
 import os
-import sys
 import json
 import numpy as np
 import pandas as pd

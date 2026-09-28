@@ -1,8 +1,6 @@
 """Empirical Population Definition & Eligibility Evaluator for NutriSense AI."""
 import json
-import os
 import pandas as pd
-import numpy as np
 
 DTA_PATH = "IAKR7EDT/IAKR7EFL.DTA"
 SUMMARY_OUTPUT = "data/interim/population_counts.json"

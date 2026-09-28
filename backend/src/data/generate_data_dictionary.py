@@ -3,10 +3,8 @@
 Extracts variable metadata directly from IAKR7EFL.DTA and IAKR7EFL.DO to generate
 an auditable data_dictionary.csv and detailed markdown documentation.
 """
-import os
 import re
 import pandas as pd
-import numpy as np
 from pandas.io.stata import StataReader
 
 DTA_PATH = "IAKR7EDT/IAKR7EFL.DTA"

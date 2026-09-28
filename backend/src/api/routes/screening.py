@@ -5,7 +5,7 @@ Protected by server-side JWT authentication dependency (Phase 5).
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 
 from src.api.schemas import (

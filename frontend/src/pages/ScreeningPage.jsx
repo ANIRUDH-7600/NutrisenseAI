@@ -4,16 +4,7 @@ import {
   Sparkles,
   Send,
   AlertCircle,
-  FileText,
-  RotateCcw,
-  CheckCircle,
-  Baby,
-  Thermometer,
-  Milk,
-  User,
-  Home,
-  Droplets,
-  MapPin
+  RotateCcw
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import DisclaimerBanner from '../components/DisclaimerBanner';

@@ -19,7 +19,6 @@ import os
 import sys
 import json
 import joblib
-import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -42,7 +41,6 @@ sys.path.insert(0, os.path.abspath("."))
 from src.features.build_features import (
     transform_candidate_features,
     transform_candidate_features_v2,
-    SCENARIO_A_V2_FEATURE_NAMES,
     validate_scenario_a_v2_feature_matrix
 )
 

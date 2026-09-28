@@ -9,8 +9,6 @@ from src.models.model_registry import (
     load_registry_v2,
     verify_all_models_integrity_v2,
     load_all_registered_pipelines_v2,
-    get_registered_thresholds_v2,
-    DEFAULT_REGISTRY_PATH
 )
 from src.api.config import API_TITLE, MODEL_REGISTRY_PATH
 

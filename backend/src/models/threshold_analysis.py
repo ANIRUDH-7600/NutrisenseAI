@@ -29,9 +29,6 @@ from sklearn.metrics import (
     roc_auc_score,
     average_precision_score,
     brier_score_loss,
-    accuracy_score,
-    precision_score,
-    recall_score,
     f1_score
 )
 from sklearn.calibration import calibration_curve, CalibratedClassifierCV
@@ -42,7 +39,6 @@ sys.path.insert(0, os.path.abspath("."))
 from src.features.build_features import (
     transform_candidate_features,
     transform_candidate_features_v2,
-    SCENARIO_A_V2_FEATURE_NAMES,
     validate_scenario_a_v2_feature_matrix
 )
 from src.models.baseline_model import build_preprocessing_pipeline

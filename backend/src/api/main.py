@@ -22,7 +22,6 @@ from src.api.config import (
     API_VERSION,
     API_DESCRIPTION,
     get_allowed_origins,
-    NUTRISENSE_ENV
 )
 from src.api.services.screening_service import ScreeningService
 from src.api.routes import health_router, screening_router, metadata_router, auth_router

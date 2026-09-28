@@ -28,7 +28,6 @@ import sys
 import time
 import json
 import joblib
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -58,7 +57,6 @@ sys.path.insert(0, os.path.abspath("."))
 from src.features.build_features import (
     transform_candidate_features,
     transform_candidate_features_v2,
-    SCENARIO_A_V2_FEATURE_NAMES,
     validate_scenario_a_v2_feature_matrix
 )
 
