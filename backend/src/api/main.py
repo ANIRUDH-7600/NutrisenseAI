@@ -25,7 +25,8 @@ from src.api.config import (
     NUTRISENSE_ENV
 )
 from src.api.services.screening_service import ScreeningService
-from src.api.routes import health_router, screening_router, metadata_router
+from src.api.routes import health_router, screening_router, metadata_router, auth_router
+
 
 # Configure minimal operational logger (strict privacy: zero feature/body logging)
 logging.basicConfig(
@@ -183,10 +184,12 @@ def create_app() -> FastAPI:
 
     # 4. Include Routers
     app.include_router(health_router)
+    app.include_router(auth_router)
     app.include_router(screening_router)
     app.include_router(metadata_router)
 
     return app
+
 
 
 app = create_app()

@@ -174,15 +174,68 @@ In Phase 6, screening documents in MongoDB will be explicitly associated with th
 
 ---
 
-## 9. Implementation Roadmap
+## 9. Implemented Registration Flow (`POST /api/v1/auth/register`)
 
-| Phase | Component | Status |
-| :--- | :--- | :--- |
-| **Phase 1** | Security utilities (`src/api/security.py`), Pydantic schemas, JWT engine, bcrypt hashing, config & env setup | **COMPLETED** |
-| **Phase 2** | User Registration route (`POST /api/v1/auth/register`), MongoDB user persistence, unique email index | *Next (Phase 2)* |
-| **Phase 3** | User Login route (`POST /api/v1/auth/login`), credential verification, token issuance, `GET /api/v1/auth/me` | *Scheduled (Phase 3)* |
-| **Phase 4** | User Logout handling, token revocation support, client state clearing | *Scheduled (Phase 4)* |
-| **Phase 5** | Route protection enforcement on screening endpoints | *Scheduled (Phase 5)* |
-| **Phase 6** | User-owned screening data persistence, user filtering, IDOR/BOLA regression tests | *Scheduled (Phase 6)* |
-| **Phases 7–13** | Security hardening, rate limiting, and Frontend UI (Login, Signup, User Dashboard) | *Scheduled (Phases 7–13)* |
-| **Phases 14–20** | Full integration testing, security penetration tests, E2E validation, and final report | *Scheduled (Phases 14–20)* |
+The registration endpoint is live and fully tested:
+
+- **Endpoint**: `POST /api/v1/auth/register`
+- **Request Format**:
+  ```json
+  {
+    "name": "Dr. Priya Sen",
+    "email": "priya.sen@district-hospital.org",
+    "password": "SecurePassword2026!",
+    "confirm_password": "SecurePassword2026!",
+    "role": "health_worker"
+  }
+  ```
+- **Response Format (HTTP 201 Created)**:
+  ```json
+  {
+    "user_id": "usr_9f8b2c4e1a0d",
+    "name": "Dr. Priya Sen",
+    "email": "priya.sen@district-hospital.org",
+    "role": "health_worker",
+    "created_at": "2026-09-28T10:00:00Z",
+    "is_active": true
+  }
+  ```
+
+### Processing Pipeline:
+1. **Input Normalization & Validation**:
+   - `email`: Stripped of leading/trailing whitespace and converted strictly to lowercase.
+   - `password`: Enforced length (8–128 chars), required character types (at least one letter and one number), and confirmed matching.
+   - `name`: Whitespace trimmed, minimum 2 characters.
+2. **Pre-Insert Uniqueness Check**:
+   - Queries `db.users.find_one({"email": normalized_email})`.
+   - If an account exists, returns HTTP `409 Conflict` (`EMAIL_ALREADY_EXISTS`).
+3. **Cryptographic Salted Hashing**:
+   - Computes `bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(12))`.
+   - Raw plaintext password is discarded immediately.
+4. **Asynchronous Persistence**:
+   - Inserts document into `db.users` with unique indexes on `email` and `user_id`.
+   - Concurrent duplicate race conditions caught via `DuplicateKeyError` and mapped to HTTP `409 Conflict`.
+5. **Fail-Soft Safe Response**:
+   - Returns sanitized `UserResponse` with HTTP `201 Created`.
+   - Strictly excludes `password`, `password_hash`, or internal system keys.
+
+---
+
+## 10. Implementation Status Tracker
+
+### IMPLEMENTED:
+- [x] **MongoDB `users` collection**: Initialized with unique indexes on `email` and `user_id`.
+- [x] **Email uniqueness enforcement**: Database index and pre-check validation preventing duplicate accounts.
+- [x] **Email normalization**: Consistent lowercase trimming across all checks and storage.
+- [x] **Password hashing**: Salted bcrypt hashing (work factor 12), zero plaintext persistence.
+- [x] **Registration endpoint (`POST /api/v1/auth/register`)**: Returns HTTP 201 with sanitized `UserResponse`.
+- [x] **Automated registration tests**: 11 unit/integration test cases covering all validation, duplicate, and database failure modes.
+
+### NOT YET IMPLEMENTED (Scheduled for subsequent phases):
+- [ ] **Login (`POST /api/v1/auth/login`)**: Phase 3
+- [ ] **Current User Profile (`GET /api/v1/auth/me`)**: Phase 3
+- [ ] **Logout**: Phase 4
+- [ ] **Server-side route protection (`get_current_user`) enforcement on screening endpoints**: Phase 5
+- [ ] **User-owned screening records & IDOR filtering**: Phase 6
+- [ ] **Frontend authentication UI (Signup, Login, Dashboard)**: Phases 11–13
+

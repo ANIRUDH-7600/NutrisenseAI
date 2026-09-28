@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, DuplicateKeyError
 
 from src.api.config import (
     MONGODB_URI,
@@ -56,6 +56,12 @@ async def init_db() -> None:
         await _db.screenings.create_index("screening_id", unique=True)
         await _db.screenings.create_index([("timestamp", -1)])
         logger.info("[DATABASE] Database indexes verified on 'screenings' collection.")
+
+        # Create user indexes asynchronously
+        await _db.users.create_index("email", unique=True)
+        await _db.users.create_index("user_id", unique=True)
+        logger.info("[DATABASE] Database indexes verified on 'users' collection.")
+
 
     except ServerSelectionTimeoutError as e:
         _is_connected = False
@@ -205,3 +211,81 @@ async def delete_screening_record(screening_id: str) -> bool:
     except Exception as e:
         logger.warning(f"[DATABASE] Failed to delete screening record '{screening_id}': {e}")
         return False
+
+
+# ==============================================================================
+# User Account Operations (Phase 2)
+# ==============================================================================
+
+async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates a new user record in the 'users' collection.
+    Enforces unique email, generates user_id and timestamps.
+    Raises DuplicateKeyError if an account with the normalized email already exists.
+    Raises RuntimeError if database is offline or disconnected.
+    """
+    if _db is None or not _is_connected:
+        raise RuntimeError("Database is currently disconnected or unavailable.")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    user_id = user_data.get("user_id") or f"usr_{uuid.uuid4().hex[:12]}"
+    normalized_email = user_data["email"].strip().lower()
+
+    document = {
+        "user_id": user_id,
+        "name": user_data["name"].strip(),
+        "email": normalized_email,
+        "password_hash": user_data["password_hash"],
+        "role": user_data.get("role", "health_worker"),
+        "is_active": user_data.get("is_active", True),
+        "created_at": user_data.get("created_at") or now_iso,
+        "updated_at": user_data.get("updated_at") or now_iso,
+    }
+
+    # Ensure no conflicting _id passed
+    document.pop("_id", None)
+
+    await _db.users.insert_one(document)
+    logger.info(f"[DATABASE] Created user account '{user_id}' with email '{normalized_email}'.")
+    return document
+
+
+async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a user document by normalized email address from the 'users' collection."""
+    if _db is None or not _is_connected:
+        return None
+
+    normalized_email = email.strip().lower()
+    try:
+        user = await _db.users.find_one({"email": normalized_email})
+        return user
+    except Exception as e:
+        logger.warning(f"[DATABASE] Error retrieving user by email '{normalized_email}': {e}")
+        return None
+
+
+async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a user document by user_id from the 'users' collection."""
+    if _db is None or not _is_connected:
+        return None
+
+    try:
+        user = await _db.users.find_one({"user_id": user_id})
+        return user
+    except Exception as e:
+        logger.warning(f"[DATABASE] Error retrieving user by user_id '{user_id}': {e}")
+        return None
+
+
+async def delete_user(user_id: str) -> bool:
+    """Deletes a user account by user_id (used for test teardowns and administrative actions)."""
+    if _db is None or not _is_connected:
+        return False
+
+    try:
+        result = await _db.users.delete_one({"user_id": user_id})
+        return result.deleted_count > 0
+    except Exception as e:
+        logger.warning(f"[DATABASE] Error deleting user '{user_id}': {e}")
+        return False
+
