@@ -1,19 +1,120 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   ShieldAlert,
   HeartPulse,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import DisclaimerBanner from '../components/DisclaimerBanner';
+
+const FLASHCARDS = [
+  {
+    id: 'case_01',
+    caseTag: 'CASE 01 // STUNTING_DEFICIT.MED',
+    tabLabel: '01 STUNTING',
+    question: 'What is non-invasive stunting risk?',
+    answer: (
+      <>
+        Stunting is the process by which chronic recurrent illness and adverse household environment restrict <mark className="paper-highlight">linear growth</mark> (HAZ &lt; -2 SD). Non-invasive ML markers detect early biological faltering before physical stadiometers or calibrated scales are accessible.
+      </>
+    ),
+    figureCaption: 'Fig. 4.2 LightGBM calibrated decision boundary (\u03c4 = 0.35)',
+    diagram: (
+      <svg width="100%" height="45" viewBox="0 0 240 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="10" y1="35" x2="230" y2="35" stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="140" y1="5" x2="140" y2="38" stroke="#0f172a" strokeWidth="1.5" />
+        <path d="M 15 35 Q 80 34 110 20 Q 140 5 160 12 Q 190 28 225 35" stroke="#0f172a" strokeWidth="1.5" fill="none" />
+        <circle cx="140" cy="8" r="3" fill="#0f172a" />
+      </svg>
+    ),
+    grounding: 'Grounded in • India NFHS-5',
+    category: 'Scenario A Triage'
+  },
+  {
+    id: 'case_02',
+    caseTag: 'CASE 02 // UNDERWEIGHT_COMPOSITE.MED',
+    tabLabel: '02 UNDERWEIGHT',
+    question: 'How is underweight identified without weight scales?',
+    answer: (
+      <>
+        Underweight reflects <mark className="paper-highlight">composite depletion</mark> (WAZ &lt; -2 SD) spanning acute wasting and cumulative linear growth faltering. Scenario-A models evaluate maternal BMI, birth size, feeding history, and wealth quintiles to identify metabolic deficit early.
+      </>
+    ),
+    figureCaption: 'Fig. 4.3 Composite dual-deficit risk density curve (\u03c4 = 0.31)',
+    diagram: (
+      <svg width="100%" height="45" viewBox="0 0 240 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="10" y1="35" x2="230" y2="35" stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="125" y1="6" x2="125" y2="38" stroke="#0f172a" strokeWidth="1.5" />
+        <path d="M 15 35 C 70 35, 95 12, 125 10 C 155 8, 185 24, 225 35" stroke="#0f172a" strokeWidth="1.5" fill="none" />
+        <circle cx="125" cy="10" r="3" fill="#0f172a" />
+      </svg>
+    ),
+    grounding: 'Grounded in • India NFHS-5',
+    category: 'Pre-Screening Protocol'
+  },
+  {
+    id: 'case_03',
+    caseTag: 'CASE 03 // WASTING_EMERGENCY.MED',
+    tabLabel: '03 WASTING',
+    question: 'Why evaluate wasting through recent morbidity?',
+    answer: (
+      <>
+        Wasting represents <mark className="paper-highlight">acute tissue loss</mark> (WHZ &lt; -2 SD) frequently triggered by recent episodes of diarrhea, fever, or food shock. Early non-invasive detection signals immediate clinical vulnerability requiring urgent medical triage.
+      </>
+    ),
+    figureCaption: 'Fig. 4.4 Acute shock referral cut-point (\u03c4 = 0.17)',
+    diagram: (
+      <svg width="100%" height="45" viewBox="0 0 240 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="10" y1="35" x2="230" y2="35" stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="85" y1="5" x2="85" y2="38" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="2 2" />
+        <path d="M 15 35 Q 50 32 85 10 Q 115 5 150 22 Q 190 32 225 35" stroke="#0f172a" strokeWidth="1.5" fill="none" />
+        <circle cx="85" cy="10" r="3" fill="#0f172a" />
+      </svg>
+    ),
+    grounding: 'Grounded in • India NFHS-5',
+    category: 'Acute Referral Protocol'
+  },
+  {
+    id: 'case_04',
+    caseTag: 'CASE 04 // MATERNAL_ETIOLOGY.MED',
+    tabLabel: '04 MATERNAL',
+    question: 'What role does maternal health play in pediatric risk?',
+    answer: (
+      <>
+        Maternal age at first birth, <mark className="paper-highlight">antenatal care visits</mark>, and maternal BMI strongly predict early child growth failure. Incorporating these non-anthropometric determinants catches vulnerability at the earliest stages of life.
+      </>
+    ),
+    figureCaption: 'Fig. 4.5 Maternal-child health intergenerational pathway (\u03c4 = 0.28)',
+    diagram: (
+      <svg width="100%" height="45" viewBox="0 0 240 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="10" y1="35" x2="230" y2="35" stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="150" y1="8" x2="150" y2="38" stroke="#0f172a" strokeWidth="1.5" />
+        <path d="M 15 35 C 60 35, 100 25, 130 14 C 150 7, 180 18, 225 35" stroke="#0f172a" strokeWidth="1.5" fill="none" />
+        <circle cx="150" cy="12" r="3" fill="#0f172a" />
+      </svg>
+    ),
+    grounding: 'Grounded in • India NFHS-5',
+    category: 'Maternal Determinants'
+  }
+];
 
 export default function HomePage() {
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  const currentCard = FLASHCARDS[activeCardIndex];
+
+  const handlePrev = () => {
+    setActiveCardIndex((prev) => (prev > 0 ? prev - 1 : FLASHCARDS.length - 1));
+  };
+
+  const handleNext = () => {
+    setActiveCardIndex((prev) => (prev < FLASHCARDS.length - 1 ? prev + 1 : 0));
+  };
+
   return (
     <div className="container" style={{ paddingTop: '2rem' }}>
-      {/* Top Disclaimer Banner */}
-      <DisclaimerBanner />
-
       {/* Split 2-Column Hero Section (Matching SmartDocQ Design) */}
       <section className="hero-split-grid">
         {/* Left Column: Bold Typography & Supported Targets */}
@@ -48,73 +149,57 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Right Column: Realistic Paper Dossier Document + Side Explore Cards */}
+        {/* Right Column: Realistic Paper Dossier Document Flashcard */}
         <div className="paper-dossier-wrap">
-          {/* Authentic Paper Document Card */}
-          <div className="paper-dossier">
-            <div className="paper-dossier-tag">
-              CASE 04 // PEDIATRIC_TRIAGE.MED
+          <div className="paper-dossier" key={currentCard.id}>
+            <div className="paper-dossier-top">
+              <span className="paper-dossier-tag">{currentCard.caseTag}</span>
+              <span className="paper-case-counter">
+                {activeCardIndex + 1} / {FLASHCARDS.length}
+              </span>
             </div>
 
             <div className="paper-label">QUESTION</div>
-            <div className="paper-question">
-              What is non-invasive stunting risk?
-            </div>
+            <div className="paper-question">{currentCard.question}</div>
 
             <div className="paper-label">ANSWER</div>
-            <p className="paper-answer">
-              Stunting is the process by which chronic recurrent illness and adverse household environment restrict <mark className="paper-highlight">linear growth</mark> (HAZ &lt; -2 SD).
-              Non-invasive ML markers detect early biological faltering before physical stadiometers or calibrated scales are accessible.
-            </p>
+            <p className="paper-answer">{currentCard.answer}</p>
 
             {/* Technical Diagram */}
             <div className="paper-diagram">
-              <svg width="100%" height="45" viewBox="0 0 240 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Horizontal baseline */}
-                <line x1="10" y1="35" x2="230" y2="35" stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" />
-                {/* Threshold Marker */}
-                <line x1="140" y1="5" x2="140" y2="38" stroke="#0f172a" strokeWidth="1.5" />
-                {/* Bell-like risk curve */}
-                <path d="M 15 35 Q 80 34 110 20 Q 140 5 160 12 Q 190 28 225 35" stroke="#0f172a" strokeWidth="1.5" fill="none" />
-                <circle cx="140" cy="8" r="3" fill="#0f172a" />
-              </svg>
-              <div className="paper-diagram-caption">
-                Fig. 4.2 LightGBM calibrated decision boundary (&tau; = 0.35)
-              </div>
+              {currentCard.diagram}
+              <div className="paper-diagram-caption">{currentCard.figureCaption}</div>
             </div>
 
+            {/* Footer with Metadata & Bottom Navigation Arrows */}
             <div className="paper-footer-meta">
-              <span>Grounded in • India NFHS-5</span>
-              <span>Scenario A Triage</span>
+              <div className="paper-footer-info">
+                <span>{currentCard.grounding}</span>
+                <span className="paper-footer-sep">•</span>
+                <span>{currentCard.category}</span>
+              </div>
+
+              <div className="paper-arrows-group">
+                <button
+                  type="button"
+                  className="paper-theme-arrow-btn"
+                  onClick={handlePrev}
+                  aria-label="Previous card"
+                  title="Previous card"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="paper-theme-arrow-btn"
+                  onClick={handleNext}
+                  aria-label="Next card"
+                  title="Next card"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Floating Dark Side Explore Cards (Side-by-side with paper) */}
-          <div className="side-explore-wrap">
-            <div className="side-explore-label">
-              <span className="sparkle-icon">✦</span>
-              <span>EXPLORE ASSESSMENTS</span>
-            </div>
-
-            <Link to="/screen" className="side-explore-card">
-              <div className="side-explore-header">
-                <span className="explore-num">01</span>
-                <span className="explore-action">ASK &rarr;</span>
-              </div>
-              <div className="side-explore-text">
-                What role does maternal BMI play?
-              </div>
-            </Link>
-
-            <Link to="/screen" className="side-explore-card">
-              <div className="side-explore-header">
-                <span className="explore-num">02</span>
-                <span className="explore-action">ASK &rarr;</span>
-              </div>
-              <div className="side-explore-text">
-                What triage threshold triggers stunting referral?
-              </div>
-            </Link>
           </div>
         </div>
       </section>

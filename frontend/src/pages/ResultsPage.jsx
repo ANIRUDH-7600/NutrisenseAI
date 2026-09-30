@@ -12,7 +12,6 @@ import {
   Stethoscope,
   Sparkles
 } from 'lucide-react';
-import DisclaimerBanner from '../components/DisclaimerBanner';
 
 export default function ResultsPage({ screeningResult }) {
   const location = useLocation();
@@ -51,7 +50,7 @@ export default function ResultsPage({ screeningResult }) {
   }
 
   const { predictions, model_version, feature_schema_version } = resultData;
-  const childName = resultData.child_name || inputPayload?.child_name || 'Anonymous Child';
+  const childName = resultData.child_name || location.state?.inputPayload?.child_name || 'Anonymous Child';
 
   const handlePrint = () => {
     window.print();
@@ -156,8 +155,6 @@ export default function ResultsPage({ screeningResult }) {
 
   return (
     <div className="container" style={{ paddingTop: '2rem', maxWidth: '1080px' }}>
-      <DisclaimerBanner />
-
       {/* Results Header */}
       <div className="page-header-row">
         <div>

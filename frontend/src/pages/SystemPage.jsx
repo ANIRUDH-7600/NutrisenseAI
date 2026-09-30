@@ -9,7 +9,6 @@ import {
   Clock
 } from 'lucide-react';
 import { apiService } from '../services/api';
-import DisclaimerBanner from '../components/DisclaimerBanner';
 
 export default function SystemPage() {
   const [modelHealth, setModelHealth] = useState(null);
@@ -46,8 +45,6 @@ export default function SystemPage() {
 
   return (
     <div className="container" style={{ paddingTop: '2rem', maxWidth: '960px' }}>
-      <DisclaimerBanner />
-
       {/* Header */}
       <div className="page-header-row" style={{ marginBottom: '2rem' }}>
         <div>

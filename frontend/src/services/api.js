@@ -17,8 +17,10 @@ class ApiError extends Error {
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('nutrisense_token') : null;
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {})
   };
 
@@ -119,6 +121,59 @@ export const apiService = {
   async deleteScreening(screeningId) {
     return request(`/api/v1/screenings/${screeningId}`, {
       method: 'DELETE'
+    });
+  },
+
+  // --------------------------------------------------------------------------
+  // Authentication & Health Worker Account Services (Phases 1-7)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Registers a new health worker account.
+   * @param {Object} userData - { name, email, password, confirm_password, role }
+   */
+  async register(userData) {
+    return request('/api/v1/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  },
+
+  /**
+   * Authenticates health worker and returns JWT bearer token.
+   * @param {Object} credentials - { email, password }
+   */
+  async login(credentials) {
+    return request('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  },
+
+  /**
+   * Authenticates user via Google SSO.
+   * @param {Object} payload - { token, email, name }
+   */
+  async googleLogin(payload = {}) {
+    return request('/api/v1/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  /**
+   * Retrieves authenticated health worker profile via JWT Bearer token.
+   */
+  async getMe() {
+    return request('/api/v1/auth/me');
+  },
+
+  /**
+   * Logs out user and revokes current JWT token on server.
+   */
+  async logout() {
+    return request('/api/v1/auth/logout', {
+      method: 'POST'
     });
   }
 };

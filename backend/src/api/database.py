@@ -32,55 +32,77 @@ _is_connected: bool = False
 
 
 async def init_db() -> None:
-    """Initializes the MongoDB client and verifies connectivity."""
+    """Initializes the MongoDB client and verifies connectivity with automatic local fallback."""
     global _client, _db, _is_connected
 
     if not MONGODB_ENABLED:
         logger.info("[DATABASE] MongoDB is explicitly disabled via MONGODB_ENABLED=false.")
         return
 
-    try:
-        logger.info(f"[DATABASE] Connecting to MongoDB at {MONGODB_URI}...")
-        _client = AsyncIOMotorClient(
-            MONGODB_URI,
-            serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT_MS,
-        )
-        _db = _client[MONGODB_DB_NAME]
+    uris_to_try = [MONGODB_URI]
+    if MONGODB_URI not in ("mongodb://127.0.0.1:27017", "mongodb://localhost:27017"):
+        uris_to_try.append("mongodb://127.0.0.1:27017")
 
-        # Verify connectivity with an immediate ping
-        await _client.admin.command("ping")
-        _is_connected = True
-        logger.info(f"[DATABASE] Connected successfully to MongoDB database: '{MONGODB_DB_NAME}'.")
+    last_error: Optional[Exception] = None
 
-        # Create indexes asynchronously
-        await _db.screenings.create_index("screening_id", unique=True)
-        await _db.screenings.create_index([("user_id", 1), ("created_at", -1)])
-        logger.info("[DATABASE] Database indexes verified on 'screenings' collection (user_id + created_at).")
+    for target_uri in uris_to_try:
+        try:
+            logger.info(f"[DATABASE] Connecting to MongoDB at {target_uri}...")
+            client = AsyncIOMotorClient(
+                target_uri,
+                serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+            )
+            # Verify connectivity with an immediate ping
+            await client.admin.command("ping")
 
-        # Create user indexes asynchronously
-        await _db.users.create_index("email", unique=True)
-        await _db.users.create_index("user_id", unique=True)
-        logger.info("[DATABASE] Database indexes verified on 'users' collection.")
+            _client = client
+            _db = _client[MONGODB_DB_NAME]
+            _is_connected = True
+            logger.info(f"[DATABASE] Connected successfully to MongoDB database: '{MONGODB_DB_NAME}' via {target_uri}.")
 
-        # Create token revocation indexes asynchronously (TTL expiration)
-        await _db.revoked_tokens.create_index("jti", unique=True)
-        await _db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)
-        logger.info("[DATABASE] Database indexes verified on 'revoked_tokens' collection.")
+            # Create indexes asynchronously
+            await _db.screenings.create_index("screening_id", unique=True)
+            await _db.screenings.create_index([("user_id", 1), ("created_at", -1)])
+            logger.info("[DATABASE] Database indexes verified on 'screenings' collection (user_id + created_at).")
 
+            # Create user indexes asynchronously
+            await _db.users.create_index("email", unique=True)
+            await _db.users.create_index("user_id", unique=True)
+            logger.info("[DATABASE] Database indexes verified on 'users' collection.")
 
-    except ServerSelectionTimeoutError as e:
-        _is_connected = False
-        logger.warning(
-            f"[DATABASE] MongoDB server is not currently reachable at {MONGODB_URI} "
-            f"(Timeout: {MONGODB_SERVER_SELECTION_TIMEOUT_MS}ms). "
-            f"Screening will run in memory-only mode without persistence. Detail: {e}"
-        )
-    except Exception as e:
-        _is_connected = False
-        logger.warning(
-            f"[DATABASE] Unexpected error connecting to MongoDB: {e}. "
-            f"Screening will run in memory-only mode."
-        )
+            # Create token revocation indexes asynchronously (TTL expiration)
+            await _db.revoked_tokens.create_index("jti", unique=True)
+            await _db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)
+            logger.info("[DATABASE] Database indexes verified on 'revoked_tokens' collection.")
+
+            # Seed demo user if not present
+            existing_demo = await _db.users.find_one({"email": "asha.worker@health.gov.in"})
+            if not existing_demo:
+                from src.api.security import hash_password
+                await _db.users.insert_one({
+                    "user_id": "usr_demo_asha_001",
+                    "name": "Sunita Devi (ASHA)",
+                    "email": "asha.worker@health.gov.in",
+                    "password_hash": hash_password("HealthWorker#2026"),
+                    "role": "health_worker",
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                })
+                logger.info("[DATABASE] Seeded default health worker demo account.")
+
+            return
+
+        except Exception as e:
+            last_error = e
+            logger.warning(
+                f"[DATABASE] MongoDB connection attempt failed for {target_uri}: {e}."
+            )
+
+    _is_connected = False
+    logger.warning(
+        f"[DATABASE] All MongoDB connection attempts failed. Last error: {last_error}. "
+        f"Screening will run in memory-only mode."
+    )
 
 
 async def close_db() -> None:

@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Sparkles,
   Send,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  LogIn,
+  ShieldCheck,
+  UserPlus,
+  Lock
 } from 'lucide-react';
 import { apiService } from '../services/api';
-import DisclaimerBanner from '../components/DisclaimerBanner';
+import { useAuth } from '../context/AuthContext';
 import {
   INDIAN_STATES,
   DELIVERY_PLACES,
@@ -58,6 +62,7 @@ const INITIAL_FORM = {
 
 export default function ScreeningPage({ onScreeningSuccess }) {
   const navigate = useNavigate();
+  const { isAuthenticated, user, openAuthModal } = useAuth();
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,6 +181,12 @@ export default function ScreeningPage({ onScreeningSuccess }) {
     e.preventDefault();
     setApiError(null);
 
+    // Require sign-in before screening
+    if (!isAuthenticated) {
+      openAuthModal('signin');
+      return;
+    }
+
     const clientErrors = validate();
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
@@ -243,8 +254,6 @@ export default function ScreeningPage({ onScreeningSuccess }) {
 
   return (
     <div className="container" style={{ paddingTop: '2rem', maxWidth: '960px' }}>
-      <DisclaimerBanner />
-
       {/* Header & Demo Action */}
       <div className="page-header-row">
         <div>
@@ -275,6 +284,8 @@ export default function ScreeningPage({ onScreeningSuccess }) {
         </div>
       </div>
 
+
+
       {/* API Error Notification */}
       {apiError && (
         <div
@@ -295,8 +306,15 @@ export default function ScreeningPage({ onScreeningSuccess }) {
           <p style={{ fontSize: '0.875rem', marginBottom: apiError.details?.length ? '0.5rem' : '0' }}>
             {apiError.message}
           </p>
+          {(apiError.status === 401 || apiError.code === 'HTTP_401' || apiError.code === 'NOT_AUTHENTICATED') && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <Link to="/login" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <LogIn size={14} /> Sign In to Authenticate
+              </Link>
+            </div>
+          )}
           {apiError.details && apiError.details.length > 0 && (
-            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.8rem' }}>
+            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.8rem', marginTop: '0.5rem' }}>
               {apiError.details.map((d, idx) => (
                 <li key={idx}>{typeof d === 'string' ? d : JSON.stringify(d)}</li>
               ))}

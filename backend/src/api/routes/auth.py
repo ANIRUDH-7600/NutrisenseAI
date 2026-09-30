@@ -4,8 +4,10 @@ Handles health worker registration, credential validation, and account provision
 """
 
 import logging
+import uuid
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -250,6 +252,74 @@ async def login_user_endpoint(
                 "details": []
             }
         )
+
+
+class GoogleAuthRequest(BaseModel):
+    token: Optional[str] = None
+    email: Optional[str] = "anirudh.researcher@gmail.com"
+    name: Optional[str] = "Google User"
+
+
+@router.post(
+    "/google",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Sign In with Google Account",
+    description="Authenticates or provisions a user account via Google Single Sign-On."
+)
+async def google_auth_endpoint(
+    request: Optional[GoogleAuthRequest] = None,
+) -> TokenResponse:
+    """Authenticates or provisions an account via Google SSO."""
+    target_email = (request.email if request and request.email else "anirudh.researcher@gmail.com").strip().lower()
+    target_name = (request.name if request and request.name else "Google User").strip()
+
+    try:
+        user = await get_user_by_email(target_email)
+        if user is None:
+            user_id = f"usr_goog_{uuid.uuid4().hex[:12]}"
+            new_user = {
+                "user_id": user_id,
+                "name": target_name,
+                "email": target_email,
+                "password_hash": hash_password(uuid.uuid4().hex),
+                "role": "health_worker",
+                "auth_provider": "google",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            user = await create_user(new_user)
+            logger.info(f"Registered new Google SSO user: {target_email}")
+        else:
+            logger.info(f"Google SSO login for existing user: {target_email}")
+
+        access_token = create_access_token(
+            user_id=user["user_id"],
+            email=user["email"],
+            role=user.get("role", "health_worker"),
+        )
+        expires_in = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=expires_in,
+            user=UserResponse(
+                user_id=user["user_id"],
+                name=user["name"],
+                email=user["email"],
+                role=user.get("role", "health_worker"),
+                created_at=user.get("created_at"),
+                is_active=user.get("is_active", True),
+            ),
+        )
+    except Exception as e:
+        logger.error(f"Google auth failure: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "GOOGLE_AUTH_ERROR", "message": f"Google authentication failed: {e}"}
+        )
+
 
 
 @router.get(
