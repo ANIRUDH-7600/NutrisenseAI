@@ -229,8 +229,8 @@ The prototype incorporates defense-in-depth security controls:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/NutriSense-Ai.git
-cd NutriSense-Ai
+git clone https://github.com/ANIRUDH-7600/NutrisenseAI.git
+cd NutrisenseAI
 ```
 
 ### 2. Backend Setup
@@ -361,7 +361,7 @@ To access the microdata:
 This repository contains the software and experimental implementation for the final-year B.Tech computer science research paper:
 *“NutriSense AI: Childhood Malnutrition Risk Intelligence and Early Intervention Support System”*.
 
-Detailed documentation, step-by-step experiment logs, and research reports are available in the [`docs/`](docs/) directory.
+Detailed documentation, step-by-step experiment logs, and research reports are available in the [`backend/docs/`](backend/docs/) directory.
 
 ---
 
